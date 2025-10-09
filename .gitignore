@@ -1,0 +1,20 @@
+# Node / dependencies
+node_modules/
+npm-debug.log*
+
+# Expo / React Native
+frontend/.expo/
+frontend/.expo-shared/
+frontend/web-build/
+
+# AdonisJS
+backend/tmp/
+backend/build/
+backend/.env
+
+# Env / IDE
+.env
+.env.*
+.vscode/
+.idea/
+.DS_Store
