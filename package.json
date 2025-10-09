@@ -1,0 +1,11 @@
+{
+  "name": "remend-ai",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix remend-ai-api\" \"cd remend-ai-app && npx expo start\"",
+    "dev-i": "concurrently \"npm run dev --prefix remend-ai-api\" \"cd remend-ai-app && npx expo start --ios\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
