@@ -95,7 +95,7 @@ export default function HomeScreen() {
         </Card>
 
         <Button mode="outlined" onPress={handleLogout} className="mt-4" textColor="#dc2626">
-          Sign Out
+          <Text>Sign Out</Text>
         </Button>
       </View>
     </ScrollView>

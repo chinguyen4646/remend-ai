@@ -63,11 +63,11 @@ export default function LoginScreen({ onNavigateToRegister }: Props) {
               disabled={isLoading || !email || !password}
               className="mt-2"
             >
-              Sign In
+              <Text>Sign In</Text>
             </Button>
 
             <Button mode="text" onPress={onNavigateToRegister} disabled={isLoading}>
-              Don't have an account? Register
+              <Text>Don't have an account? Register</Text>
             </Button>
           </View>
 
