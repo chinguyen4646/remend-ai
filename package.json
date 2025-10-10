@@ -2,8 +2,11 @@
   "name": "remend-ai",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"npm run dev --prefix remend-ai-api\" \"cd remend-ai-app && npx expo start\"",
-    "dev-i": "concurrently \"npm run dev --prefix remend-ai-api\" \"cd remend-ai-app && npx expo start --ios\""
+    "dev": "concurrently \"npm run dev --prefix remend-ai-api\" \"cd remend-ai-app && npx expo start --port 8081\"",
+    "dev:api": "npm run dev --prefix remend-ai-api",
+    "dev:app": "cd remend-ai-app && npx expo start",
+    "dev-i": "concurrently \"npm run dev --prefix remend-ai-api\" \"cd remend-ai-app && npx expo start --ios --port 8081\"",
+    "dev-a": "concurrently \"npm run dev --prefix remend-ai-api\" \"cd remend-ai-app && npx expo start --android --port 8081\""
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
