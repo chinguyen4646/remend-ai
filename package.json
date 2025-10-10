@@ -6,9 +6,32 @@
     "dev:api": "npm run dev --prefix remend-ai-api",
     "dev:app": "cd remend-ai-app && npx expo start",
     "dev-i": "concurrently \"npm run dev --prefix remend-ai-api\" \"cd remend-ai-app && npx expo start --ios --port 8081\"",
-    "dev-a": "concurrently \"npm run dev --prefix remend-ai-api\" \"cd remend-ai-app && npx expo start --android --port 8081\""
+    "dev-a": "concurrently \"npm run dev --prefix remend-ai-api\" \"cd remend-ai-app && npx expo start --android --port 8081\"",
+    "lint": "eslint remend-ai-api remend-ai-app --ext .ts,.tsx",
+    "format": "prettier --write .",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "remend-ai-api/**/*.{ts,tsx,js,jsx}": [
+      "bash -c 'cd remend-ai-api && eslint --fix \"$(echo \"$0\" | sed \"s|.*/remend-ai-api/||\" )\"'",
+      "prettier --write"
+    ],
+    "remend-ai-api/**/*.{json,md}": [
+      "prettier --write"
+    ],
+    "remend-ai-app/**/*.{ts,tsx,js,jsx}": [
+      "bash -c 'cd remend-ai-app && eslint --fix \"$(echo \"$0\" | sed \"s|.*/remend-ai-app/||\" )\"'",
+      "prettier --write"
+    ],
+    "remend-ai-app/**/*.{json,md}": [
+      "prettier --write"
+    ]
   },
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "eslint": "^9.37.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.3",
+    "prettier": "^3.6.2"
   }
 }
