@@ -1,20 +1,20 @@
-import app from '@adonisjs/core/services/app'
-import { HttpContext, ExceptionHandler } from '@adonisjs/core/http'
-import logger from '@adonisjs/core/services/logger'
+import app from "@adonisjs/core/services/app";
+import { HttpContext, ExceptionHandler } from "@adonisjs/core/http";
+import logger from "@adonisjs/core/services/logger";
 
 export default class HttpExceptionHandler extends ExceptionHandler {
   /**
    * In debug mode, the exception handler will display verbose errors
    * with pretty printed stack traces.
    */
-  protected debug = !app.inProduction
+  protected debug = !app.inProduction;
 
   /**
    * The method is used for handling errors and returning
    * response to the client
    */
   async handle(error: unknown, ctx: HttpContext) {
-    return super.handle(error, ctx)
+    return super.handle(error, ctx);
   }
 
   /**
@@ -26,7 +26,7 @@ export default class HttpExceptionHandler extends ExceptionHandler {
   async report(error: unknown, ctx: HttpContext) {
     // Log server errors (5xx) with stack traces
     if (error instanceof Error) {
-      const statusCode = 'status' in error ? (error as any).status : 500
+      const statusCode = "status" in error ? (error as any).status : 500;
 
       if (statusCode >= 500) {
         logger.error(
@@ -37,11 +37,11 @@ export default class HttpExceptionHandler extends ExceptionHandler {
             errorMessage: error.message,
             stack: error.stack,
           },
-          `Server error: ${error.message}`
-        )
+          `Server error: ${error.message}`,
+        );
       }
     }
 
-    return super.report(error, ctx)
+    return super.report(error, ctx);
   }
 }

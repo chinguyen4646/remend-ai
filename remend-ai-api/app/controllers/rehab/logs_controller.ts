@@ -1,44 +1,44 @@
-import type { HttpContext } from '@adonisjs/core/http'
-import RehabLog from '#models/rehab_log'
-import RehabProgram from '#models/rehab_program'
-import { createRehabLogValidator, getRehabLogsValidator } from '#validators/rehab/log'
-import { toUtcStartOfLocalDay, todayUtcFromLocal, isValidIsoDate } from '#utils/dates'
-import logger from '@adonisjs/core/services/logger'
+import type { HttpContext } from "@adonisjs/core/http";
+import RehabLog from "#models/rehab_log";
+import RehabProgram from "#models/rehab_program";
+import { createRehabLogValidator, getRehabLogsValidator } from "#validators/rehab/log";
+import { toUtcStartOfLocalDay, todayUtcFromLocal, isValidIsoDate } from "#utils/dates";
+import logger from "@adonisjs/core/services/logger";
 
 export default class LogsController {
   async create({ auth, request, response }: HttpContext) {
-    const user = auth.user!
-    const data = await request.validateUsing(createRehabLogValidator)
-    const tz = (request as any).requestTz as string
+    const user = auth.user!;
+    const data = await request.validateUsing(createRehabLogValidator);
+    const tz = (request as any).requestTz as string;
 
     // Verify program exists and belongs to user
-    const program = await RehabProgram.find(data.programId)
+    const program = await RehabProgram.find(data.programId);
 
     if (!program) {
-      return response.notFound({ errors: [{ message: 'Program not found' }] })
+      return response.notFound({ errors: [{ message: "Program not found" }] });
     }
 
     if (program.userId !== user.id) {
-      return response.forbidden({ errors: [{ message: 'Unauthorized' }] })
+      return response.forbidden({ errors: [{ message: "Unauthorized" }] });
     }
 
-    if (program.status !== 'active') {
+    if (program.status !== "active") {
       return response.badRequest({
-        errors: [{ message: 'Cannot log to a non-active program' }],
-      })
+        errors: [{ message: "Cannot log to a non-active program" }],
+      });
     }
 
     // Validate and transform date
-    let logDate
+    let logDate;
     if (data.date) {
       if (!isValidIsoDate(data.date)) {
         return response.unprocessableEntity({
-          errors: [{ message: 'Invalid date format. Use YYYY-MM-DD' }],
-        })
+          errors: [{ message: "Invalid date format. Use YYYY-MM-DD" }],
+        });
       }
-      logDate = toUtcStartOfLocalDay(data.date, tz)
+      logDate = toUtcStartOfLocalDay(data.date, tz);
     } else {
-      logDate = todayUtcFromLocal(tz)
+      logDate = todayUtcFromLocal(tz);
     }
 
     try {
@@ -51,74 +51,74 @@ export default class LogsController {
         swelling: data.swelling || null,
         activityLevel: data.activityLevel || null,
         notes: data.notes || null,
-      })
+      });
 
       logger.info(
         { userId: user.id, programId: data.programId, date: logDate.toISODate() },
-        'Rehab log created'
-      )
+        "Rehab log created",
+      );
 
-      return response.created({ log })
+      return response.created({ log });
     } catch (error) {
       // Handle unique constraint violation
-      if (error.code === '23505') {
+      if (error.code === "23505") {
         return response.conflict({
-          errors: [{ message: 'A log already exists for this program and date' }],
-        })
+          errors: [{ message: "A log already exists for this program and date" }],
+        });
       }
-      throw error
+      throw error;
     }
   }
 
   async index({ auth, request, response }: HttpContext) {
-    const user = auth.user!
-    const params = await request.validateUsing(getRehabLogsValidator)
-    const tz = (request as any).requestTz as string
+    const user = auth.user!;
+    const params = await request.validateUsing(getRehabLogsValidator);
+    const tz = (request as any).requestTz as string;
 
-    let programId: number | null = null
+    let programId: number | null = null;
 
     // Resolve 'active' to actual program ID
-    if (params.programId === 'active') {
+    if (params.programId === "active") {
       const activeProgram = await RehabProgram.query()
-        .where('user_id', user.id)
-        .where('status', 'active')
-        .first()
+        .where("user_id", user.id)
+        .where("status", "active")
+        .first();
 
       if (!activeProgram) {
         return response.notFound({
-          errors: [{ message: 'No active rehab program found' }],
-        })
+          errors: [{ message: "No active rehab program found" }],
+        });
       }
 
-      programId = activeProgram.id
+      programId = activeProgram.id;
     } else if (params.programId) {
-      programId = Number.parseInt(params.programId)
+      programId = Number.parseInt(params.programId);
 
       // Verify program belongs to user
-      const program = await RehabProgram.find(programId)
+      const program = await RehabProgram.find(programId);
       if (!program || program.userId !== user.id) {
-        return response.notFound({ errors: [{ message: 'Program not found' }] })
+        return response.notFound({ errors: [{ message: "Program not found" }] });
       }
     }
 
     // Build query
-    const query = RehabLog.query().where('user_id', user.id)
+    const query = RehabLog.query().where("user_id", user.id);
 
     if (programId) {
-      query.where('program_id', programId)
+      query.where("program_id", programId);
     }
 
     // Apply date range filter using user's timezone
     if (params.range) {
-      const { rangeLastNDaysUtc } = await import('#utils/dates')
-      const days = params.range === 'last_7' ? 7 : params.range === 'last_14' ? 14 : 30
-      const { start, end } = rangeLastNDaysUtc(days, tz)
+      const { rangeLastNDaysUtc } = await import("#utils/dates");
+      const days = params.range === "last_7" ? 7 : params.range === "last_14" ? 14 : 30;
+      const { start, end } = rangeLastNDaysUtc(days, tz);
 
-      query.where('date', '>=', start.toISODate()!).andWhere('date', '<=', end.toISODate()!)
+      query.where("date", ">=", start.toISODate()!).andWhere("date", "<=", end.toISODate()!);
     }
 
-    const logs = await query.orderBy('date', 'desc').preload('program')
+    const logs = await query.orderBy("date", "desc").preload("program");
 
-    return response.ok({ logs })
+    return response.ok({ logs });
   }
 }

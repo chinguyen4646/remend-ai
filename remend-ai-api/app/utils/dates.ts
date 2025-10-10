@@ -1,4 +1,4 @@
-import { DateTime } from 'luxon'
+import { DateTime } from "luxon";
 
 /**
  * Converts a date-only string (YYYY-MM-DD) in the given timezone
@@ -13,8 +13,8 @@ import { DateTime } from 'luxon'
  * // Returns: 2025-01-15T05:00:00.000Z (start of Jan 15 in NYC = 5am UTC)
  */
 export const toUtcStartOfLocalDay = (isoDate: string, tz: string): DateTime => {
-  return DateTime.fromISO(isoDate, { zone: tz }).startOf('day').toUTC()
-}
+  return DateTime.fromISO(isoDate, { zone: tz }).startOf("day").toUTC();
+};
 
 /**
  * Returns UTC DateTime for the start of today in the given timezone
@@ -28,8 +28,8 @@ export const toUtcStartOfLocalDay = (isoDate: string, tz: string): DateTime => {
  * // Returns: 2025-01-15T05:00:00.000Z (start of Jan 15 in NYC)
  */
 export const todayUtcFromLocal = (tz: string): DateTime => {
-  return DateTime.now().setZone(tz).startOf('day').toUTC()
-}
+  return DateTime.now().setZone(tz).startOf("day").toUTC();
+};
 
 /**
  * Returns UTC date range for the last N days in the given timezone
@@ -46,10 +46,10 @@ export const todayUtcFromLocal = (tz: string): DateTime => {
  * // { start: 2025-01-09T05:00:00.000Z, end: 2025-01-15T05:00:00.000Z }
  */
 export const rangeLastNDaysUtc = (n: number, tz: string): { start: DateTime; end: DateTime } => {
-  const end = todayUtcFromLocal(tz)
-  const start = end.minus({ days: n - 1 }).startOf('day')
-  return { start, end }
-}
+  const end = todayUtcFromLocal(tz);
+  const start = end.minus({ days: n - 1 }).startOf("day");
+  return { start, end };
+};
 
 /**
  * Validates that a string is a valid ISO date (YYYY-MM-DD)
@@ -58,6 +58,6 @@ export const rangeLastNDaysUtc = (n: number, tz: string): { start: DateTime; end
  * @returns true if valid ISO date, false otherwise
  */
 export const isValidIsoDate = (dateStr: string): boolean => {
-  const dt = DateTime.fromISO(dateStr)
-  return dt.isValid && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)
-}
+  const dt = DateTime.fromISO(dateStr);
+  return dt.isValid && /^\d{4}-\d{2}-\d{2}$/.test(dateStr);
+};

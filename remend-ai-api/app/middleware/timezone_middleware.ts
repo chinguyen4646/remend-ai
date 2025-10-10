@@ -1,5 +1,5 @@
-import type { HttpContext } from '@adonisjs/core/http'
-import type { NextFn } from '@adonisjs/core/types/http'
+import type { HttpContext } from "@adonisjs/core/http";
+import type { NextFn } from "@adonisjs/core/types/http";
 
 /**
  * Timezone middleware resolves the request timezone from:
@@ -11,15 +11,15 @@ import type { NextFn } from '@adonisjs/core/types/http'
  */
 export default class TimezoneMiddleware {
   async handle(ctx: HttpContext, next: NextFn) {
-    const { request, auth } = ctx
+    const { request, auth } = ctx;
 
     // Extend Request type to include requestTz
     // Priority: X-Timezone header > user.tz > 'UTC'
-    const headerTz = request.header('X-Timezone')
-    const userTz = auth.user?.tz
+    const headerTz = request.header("X-Timezone");
+    const userTz = auth.user?.tz;
 
-    ;(request as any).requestTz = headerTz || userTz || 'UTC'
+    (request as any).requestTz = headerTz || userTz || "UTC";
 
-    await next()
+    await next();
   }
 }
