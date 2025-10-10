@@ -16,12 +16,15 @@ export default function LoginScreen({ onNavigateToRegister }: Props) {
     try {
       await login({ email, password });
     } catch (err) {
-      // Error handled by store
+      // Error handled by store!
     }
   };
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1">
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      className="flex-1"
+    >
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
         <View className="flex-1 justify-center px-6 bg-white">
           <View className="mb-8">
