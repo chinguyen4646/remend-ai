@@ -5,7 +5,11 @@ import logger from "@adonisjs/core/services/logger";
 /**
  * HTTP Logger Middleware
  * Logs all incoming requests with method, path, status, duration, and user info
- * Uses hybrid logging: single line for success, detailed for errors/slow requests
+ * Strategy: Progressive disclosure
+ * - Success (2xx-3xx): Concise single line (95% of requests)
+ * - Client errors (4xx): Detailed context (helps debug user issues)
+ * - Server errors (5xx): Detailed context + stack trace (needs immediate attention)
+ * - Slow requests (>1s): Detailed context (performance investigation)
  */
 export default class HttpLoggerMiddleware {
   async handle(ctx: HttpContext, next: NextFn) {
@@ -46,9 +50,9 @@ export default class HttpLoggerMiddleware {
         ...(error && { error: error.message, stack: error.stack }),
       };
 
-      // Hybrid logging strategy
+      // Progressive disclosure: detailed logs only when needed
       if (status >= 500) {
-        // Server errors - always show details
+        // Server errors - always show details with stack trace
         logger.error(logContext, logMessage);
       } else if (status >= 400) {
         // Client errors - show details to understand what went wrong
@@ -57,7 +61,7 @@ export default class HttpLoggerMiddleware {
         // Slow requests - show details to investigate performance
         logger.warn(logContext, `⚠️ SLOW: ${logMessage}`);
       } else {
-        // Success - clean single line
+        // Success - concise single line (95% of requests)
         logger.info(logMessage);
       }
     }
