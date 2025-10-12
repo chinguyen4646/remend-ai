@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "remend-ai-app",
-    "slug": "remend-ai-app",
+    "name": "remend-ai-mobile-app",
+    "slug": "remend-ai-mobile-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

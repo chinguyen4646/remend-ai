@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Remend AI is a full-stack monorepo containing:
 
 - **remend-ai-api**: AdonisJS 6 backend API with PostgreSQL
-- **remend-ai-app**: Expo/React Native mobile application with NativeWind (TailwindCSS)
+- **remend-ai-mobile-app**: Expo/React Native mobile application with NativeWind (TailwindCSS)
 
 ## Development Commands
 
@@ -38,7 +38,7 @@ npm run dev  # Should run on http://localhost:3333
 2. **Frontend Setup**:
 
 ```bash
-cd remend-ai-app
+cd remend-ai-mobile-app
 npm install
 # .env already configured with EXPO_PUBLIC_API_URL=http://localhost:3333
 npm start  # Should run on http://localhost:8081
@@ -83,10 +83,10 @@ node ace migration:fresh
 node ace generate:key
 ```
 
-### Mobile App (remend-ai-app)
+### Mobile App (remend-ai-mobile-app)
 
 ```bash
-cd remend-ai-app
+cd remend-ai-mobile-app
 
 # Start Expo dev server
 npm start
