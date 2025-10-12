@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "concurrently \"npm run dev --prefix remend-ai-api\" \"cd remend-ai-mobile-app && npx expo start --port 8081\"",
     "dev:api": "npm run dev --prefix remend-ai-api",
-    "dev:app": "cd remend-ai-mobile-app && npx expo start",
+    "dev:mobile-app": "cd remend-ai-mobile-app && npx expo start",
     "dev-i": "concurrently \"npm run dev --prefix remend-ai-api\" \"cd remend-ai-mobile-app && npx expo start --ios --port 8081\"",
     "dev-a": "concurrently \"npm run dev --prefix remend-ai-api\" \"cd remend-ai-mobile-app && npx expo start --android --port 8081\"",
     "lint": "eslint remend-ai-api remend-ai-mobile-app --ext .ts,.tsx",
