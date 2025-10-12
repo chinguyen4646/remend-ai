@@ -45,6 +45,16 @@ export default function ProfileScreen() {
     router.replace("/(auth)/login");
   };
 
+  const handleGoToHome = () => {
+    if (user?.mode === "rehab") {
+      router.push("/rehab-home");
+    } else if (user?.mode === "maintenance") {
+      router.push("/maintenance-home");
+    } else if (user?.mode === "general") {
+      router.push("/general-home");
+    }
+  };
+
   if (isLoading) {
     return (
       <View className="flex-1 justify-center items-center bg-white">
@@ -153,6 +163,12 @@ export default function ProfileScreen() {
                 </View>
               )}
             </View>
+
+            {user?.mode && (
+              <Button mode="contained" onPress={handleGoToHome} className="mt-4" icon="home">
+                Go to {user.mode.charAt(0).toUpperCase() + user.mode.slice(1)} Home
+              </Button>
+            )}
           </Card.Content>
         </Card>
 
