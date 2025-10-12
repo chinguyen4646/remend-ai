@@ -3,22 +3,28 @@ import { Text, Button, Card } from "react-native-paper";
 import { useAuthStore } from "../stores/authStore";
 
 interface Props {
+  onNavigateToProfile: () => void;
   onLogout: () => void;
 }
 
-export default function MaintenanceHomeScreen({ onLogout }: Props) {
+export default function MaintenanceHomeScreen({ onNavigateToProfile, onLogout }: Props) {
   const { user } = useAuthStore();
 
   return (
     <ScrollView className="flex-1 bg-gray-50">
       <View className="p-6">
-        <View className="mb-6">
-          <Text variant="headlineMedium" className="font-bold mb-2">
-            Maintenance Mode 💪
-          </Text>
-          <Text variant="bodyLarge" className="text-gray-600">
-            Keep up the great work, {user?.fullName || "there"}
-          </Text>
+        <View className="mb-6 flex-row justify-between items-start">
+          <View className="flex-1">
+            <Text variant="headlineMedium" className="font-bold mb-2">
+              Maintenance Mode 💪
+            </Text>
+            <Text variant="bodyLarge" className="text-gray-600">
+              Keep up the great work, {user?.fullName || "there"}
+            </Text>
+          </View>
+          <Button mode="text" onPress={onNavigateToProfile} compact>
+            <Text>Me</Text>
+          </Button>
         </View>
 
         <Card className="mb-4">

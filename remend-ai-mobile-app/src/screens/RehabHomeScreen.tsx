@@ -6,10 +6,11 @@ import { useRehabProgramStore } from "../stores/rehabProgramStore";
 
 interface Props {
   onSetupProgram: () => void;
+  onNavigateToProfile: () => void;
   onLogout: () => void;
 }
 
-export default function RehabHomeScreen({ onSetupProgram, onLogout }: Props) {
+export default function RehabHomeScreen({ onSetupProgram, onNavigateToProfile, onLogout }: Props) {
   const { user } = useAuthStore();
   const { activeProgram, isLoading, loadActiveProgram } = useRehabProgramStore();
 
@@ -28,13 +29,18 @@ export default function RehabHomeScreen({ onSetupProgram, onLogout }: Props) {
   return (
     <ScrollView className="flex-1 bg-gray-50">
       <View className="p-6">
-        <View className="mb-6">
-          <Text variant="headlineMedium" className="font-bold mb-2">
-            Recovery Mode 🦵
-          </Text>
-          <Text variant="bodyLarge" className="text-gray-600">
-            Welcome back, {user?.fullName || "there"}
-          </Text>
+        <View className="mb-6 flex-row justify-between items-start">
+          <View className="flex-1">
+            <Text variant="headlineMedium" className="font-bold mb-2">
+              Recovery Mode 🦵
+            </Text>
+            <Text variant="bodyLarge" className="text-gray-600">
+              Welcome back, {user?.fullName || "there"}
+            </Text>
+          </View>
+          <Button mode="text" onPress={onNavigateToProfile} compact>
+            <Text>Me</Text>
+          </Button>
         </View>
 
         {!activeProgram && (

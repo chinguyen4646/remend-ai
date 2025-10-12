@@ -11,6 +11,7 @@ import RehabSetupScreen from "./src/screens/RehabSetupScreen";
 import RehabHomeScreen from "./src/screens/RehabHomeScreen";
 import MaintenanceHomeScreen from "./src/screens/MaintenanceHomeScreen";
 import GeneralHomeScreen from "./src/screens/GeneralHomeScreen";
+import ProfileScreen from "./src/screens/ProfileScreen";
 
 type AppScreen =
   | "login"
@@ -19,11 +20,13 @@ type AppScreen =
   | "rehabSetup"
   | "rehabHome"
   | "maintenanceHome"
-  | "generalHome";
+  | "generalHome"
+  | "profile";
 
 export default function App() {
   const [authScreen, setAuthScreen] = useState<"login" | "register">("login");
   const [showRehabSetup, setShowRehabSetup] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const { user, isAuthenticated, isLoading, loadUser } = useAuthStore();
 
   useEffect(() => {
@@ -33,15 +36,17 @@ export default function App() {
   // Derive screen directly from state
   const screen: AppScreen = !isAuthenticated
     ? authScreen
-    : !user?.mode
-      ? "modePicker"
-      : showRehabSetup && user.mode === "rehab"
-        ? "rehabSetup"
-        : user.mode === "rehab"
-          ? "rehabHome"
-          : user.mode === "maintenance"
-            ? "maintenanceHome"
-            : "generalHome";
+    : showProfile
+      ? "profile"
+      : !user?.mode
+        ? "modePicker"
+        : showRehabSetup && user.mode === "rehab"
+          ? "rehabSetup"
+          : user.mode === "rehab"
+            ? "rehabHome"
+            : user.mode === "maintenance"
+              ? "maintenanceHome"
+              : "generalHome";
 
   if (isLoading) {
     return (
@@ -79,14 +84,31 @@ export default function App() {
 
       case "rehabHome":
         return (
-          <RehabHomeScreen onSetupProgram={() => setShowRehabSetup(true)} onLogout={handleLogout} />
+          <RehabHomeScreen
+            onSetupProgram={() => setShowRehabSetup(true)}
+            onNavigateToProfile={() => setShowProfile(true)}
+            onLogout={handleLogout}
+          />
         );
 
       case "maintenanceHome":
-        return <MaintenanceHomeScreen onLogout={handleLogout} />;
+        return (
+          <MaintenanceHomeScreen
+            onNavigateToProfile={() => setShowProfile(true)}
+            onLogout={handleLogout}
+          />
+        );
 
       case "generalHome":
-        return <GeneralHomeScreen onLogout={handleLogout} />;
+        return (
+          <GeneralHomeScreen
+            onNavigateToProfile={() => setShowProfile(true)}
+            onLogout={handleLogout}
+          />
+        );
+
+      case "profile":
+        return <ProfileScreen onBack={() => setShowProfile(false)} onLogout={handleLogout} />;
 
       default:
         return (
