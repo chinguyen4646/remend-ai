@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { View, ScrollView, RefreshControl } from "react-native";
+import { View, RefreshControl, ScrollView } from "react-native";
 import { Text, Card, Button, ActivityIndicator } from "react-native-paper";
 import { authApi } from "../api/auth";
 import type { User } from "../types/auth";
+import BaseLayout from "../components/BaseLayout";
 
 interface Props {
   onBack: () => void;
@@ -64,11 +65,12 @@ export default function ProfileScreen({ onBack, onLogout }: Props) {
   }
 
   return (
-    <ScrollView
-      className="flex-1 bg-gray-50"
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
-      <View className="p-6">
+    <BaseLayout scrollable={false}>
+      <ScrollView
+        className="flex-1"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        showsVerticalScrollIndicator={false}
+      >
         <Button mode="text" onPress={onBack} className="self-start mb-4">
           <Text>← Back</Text>
         </Button>
@@ -150,7 +152,7 @@ export default function ProfileScreen({ onBack, onLogout }: Props) {
         <Button mode="outlined" onPress={onLogout} className="mt-4" textColor="#dc2626">
           <Text>Sign Out</Text>
         </Button>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </BaseLayout>
   );
 }
