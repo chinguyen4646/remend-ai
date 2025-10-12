@@ -2,11 +2,11 @@
   "name": "remend-ai",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"npm run dev --prefix remend-ai-api\" \"cd remend-ai-mobile-app && npx expo start --port 8081\"",
-    "dev:api": "npm run dev --prefix remend-ai-api",
-    "dev:mobile-app": "cd remend-ai-mobile-app && npx expo start",
-    "dev-i": "concurrently \"npm run dev --prefix remend-ai-api\" \"cd remend-ai-mobile-app && npx expo start --ios --port 8081\"",
-    "dev-a": "concurrently \"npm run dev --prefix remend-ai-api\" \"cd remend-ai-mobile-app && npx expo start --android --port 8081\"",
+    "dev": "concurrently \"cd remend-ai-api && npm run dev\" \"cd remend-ai-mobile-app && npx expo start --port 8081\"",
+    "dev:api": "cd remend-ai-api && npm run dev",
+    "dev:mobile": "cd remend-ai-mobile-app && npx expo start",
+    "dev:i": "concurrently \"cd remend-ai-api && npm run dev\" \"cd remend-ai-mobile-app && npx expo start --ios --port 8081\"",
+    "dev:a": "concurrently \"cd remend-ai-api && npm run dev\" \"cd remend-ai-mobile-app && npx expo start --android --port 8081\"",
     "lint": "eslint remend-ai-api remend-ai-mobile-app --ext .ts,.tsx",
     "format": "prettier --write .",
     "prepare": "husky"
