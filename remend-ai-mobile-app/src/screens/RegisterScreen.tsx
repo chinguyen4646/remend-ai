@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { View, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import { TextInput, Button, Text, Snackbar } from "react-native-paper";
 import { useAuthStore } from "../stores/authStore";

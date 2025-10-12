@@ -2,6 +2,9 @@ export interface User {
   id: number;
   email: string;
   fullName: string | null;
+  mode: "rehab" | "maintenance" | "general" | null;
+  injuryType: string | null;
+  modeStartedAt: string | null;
 }
 
 export interface AuthResponse {

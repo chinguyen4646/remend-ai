@@ -20,4 +20,15 @@ export const authApi = {
     const { data } = await api.get<{ user: User }>("/api/auth/me");
     return data;
   },
+
+  updateMode: async (
+    mode: "rehab" | "maintenance" | "general",
+    injuryType?: string,
+  ): Promise<{ user: User; message?: string }> => {
+    const { data } = await api.patch<{ user: User; message?: string }>("/api/users/mode", {
+      mode,
+      injuryType,
+    });
+    return data;
+  },
 };

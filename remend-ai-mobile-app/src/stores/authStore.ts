@@ -15,6 +15,7 @@ interface AuthState {
   register: (credentials: RegisterCredentials) => Promise<void>;
   logout: () => Promise<void>;
   loadUser: () => Promise<void>;
+  updateMode: (mode: "rehab" | "maintenance" | "general", injuryType?: string) => Promise<void>;
   clearError: () => void;
 }
 
@@ -94,17 +95,19 @@ export const useAuthStore = create<AuthState>((set) => ({
       const userJson = await AsyncStorage.getItem("user");
 
       if (token && userJson) {
-        const user = JSON.parse(userJson);
+        // Show cached user immediately for fast startup
+        const cachedUser = JSON.parse(userJson);
         set({
-          user,
+          user: cachedUser,
           token,
           isAuthenticated: true,
           isLoading: false,
         });
 
-        // Verify token is still valid
+        // Verify token is still valid and refresh user data
         try {
           const response = await authApi.me();
+          await AsyncStorage.setItem("user", JSON.stringify(response.user));
           set({ user: response.user });
         } catch (error) {
           // Token invalid, clear auth
@@ -121,6 +124,27 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
     } catch (error) {
       set({ isLoading: false });
+    }
+  },
+
+  updateMode: async (mode, injuryType) => {
+    try {
+      set({ isLoading: true, error: null });
+      const response = await authApi.updateMode(mode, injuryType);
+      const updatedUser = response.user;
+
+      await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
+      set({
+        user: updatedUser,
+        isLoading: false,
+      });
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.errors?.[0]?.message || "Failed to update mode";
+      set({
+        error: errorMessage,
+        isLoading: false,
+      });
+      throw error;
     }
   },
 

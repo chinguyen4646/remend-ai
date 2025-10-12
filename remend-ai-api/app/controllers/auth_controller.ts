@@ -32,6 +32,9 @@ export default class AuthController {
         id: user.id,
         email: user.email,
         fullName: user.fullName,
+        mode: user.mode,
+        injuryType: user.injuryType,
+        modeStartedAt: user.modeStartedAt,
       },
       token: {
         type: "bearer",
@@ -60,6 +63,9 @@ export default class AuthController {
           id: user.id,
           email: user.email,
           fullName: user.fullName,
+          mode: user.mode,
+          injuryType: user.injuryType,
+          modeStartedAt: user.modeStartedAt,
         },
         token: {
           type: "bearer",
@@ -83,6 +89,9 @@ export default class AuthController {
         id: user.id,
         email: user.email,
         fullName: user.fullName,
+        mode: user.mode,
+        injuryType: user.injuryType,
+        modeStartedAt: user.modeStartedAt,
       },
     });
   }

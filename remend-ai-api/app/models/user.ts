@@ -28,7 +28,7 @@ export default class User extends compose(BaseModel, AuthFinder) {
   declare password: string;
 
   @column()
-  declare mode: "rehab" | "maintenance" | "general";
+  declare mode: "rehab" | "maintenance" | "general" | null;
 
   @column()
   declare injuryType: string | null;
