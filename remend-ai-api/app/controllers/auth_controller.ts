@@ -2,6 +2,7 @@ import User from "#models/user";
 import { loginValidator, registerValidator } from "#validators/auth";
 import type { HttpContext } from "@adonisjs/core/http";
 import logger from "@adonisjs/core/services/logger";
+import { resolveTimezone } from "#utils/timezone";
 
 export default class AuthController {
   /**
@@ -19,13 +20,20 @@ export default class AuthController {
       });
     }
 
-    // Create user
-    const user = await User.create(data);
+    // Resolve timezone from X-Timezone header
+    const headerTz = request.header("X-Timezone");
+    const tz = resolveTimezone(headerTz);
+
+    // Create user with timezone
+    const user = await User.create({ ...data, tz });
 
     // Generate access token
     const token = await User.accessTokens.create(user);
 
-    logger.info({ userId: user.id, email: user.email }, "New user registered successfully");
+    logger.info(
+      { userId: user.id, email: user.email, tz: user.tz },
+      "New user registered successfully",
+    );
 
     return response.created({
       user: {

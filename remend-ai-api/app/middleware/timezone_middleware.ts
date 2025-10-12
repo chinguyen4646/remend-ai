@@ -1,6 +1,7 @@
 import type { HttpContext } from "@adonisjs/core/http";
 import type { NextFn } from "@adonisjs/core/types/http";
 import logger from "@adonisjs/core/services/logger";
+import { resolveTimezone } from "#utils/timezone";
 
 /**
  * Timezone middleware resolves the request timezone from:
@@ -22,7 +23,7 @@ export default class TimezoneMiddleware {
     const headerTz = request.header("X-Timezone");
     const userTz = auth.user?.tz;
 
-    (request as any).requestTz = headerTz || userTz || "UTC";
+    (request as any).requestTz = resolveTimezone(headerTz, userTz || "UTC");
 
     // Auto-update user's timezone if:
     // 1. User is authenticated (auth.user exists)
