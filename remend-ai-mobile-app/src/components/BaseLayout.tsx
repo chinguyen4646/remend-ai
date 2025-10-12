@@ -8,6 +8,7 @@ interface BaseLayoutProps {
   keyboardAvoiding?: boolean;
   centered?: boolean;
   style?: ViewStyle;
+  className?: string;
 }
 
 /**
@@ -42,20 +43,29 @@ export default function BaseLayout({
   keyboardAvoiding = false,
   centered = false,
   style,
+  className,
 }: BaseLayoutProps) {
   const insets = useSafeAreaInsets();
 
   const content = scrollable ? (
     <ScrollView
       className="flex-1"
-      contentContainerClassName={centered ? "flex-grow justify-center p-6" : "p-6"}
+      contentContainerClassName={
+        centered ? "flex-grow justify-center items-center px-8 py-6" : "items-center px-8 py-6"
+      }
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps={keyboardAvoiding ? "handled" : undefined}
     >
-      {children}
+      <View className="w-full max-w-md">{children}</View>
     </ScrollView>
   ) : (
-    <View className={centered ? "flex-1 justify-center p-6" : "flex-1 p-6"}>{children}</View>
+    <View
+      className={
+        centered ? "flex-1 justify-center items-center px-8 py-6" : "flex-1 items-center px-8 py-6"
+      }
+    >
+      <View className="w-full max-w-md">{children}</View>
+    </View>
   );
 
   const wrappedContent = keyboardAvoiding ? (
@@ -71,7 +81,7 @@ export default function BaseLayout({
 
   return (
     <View
-      className="flex-1 bg-gray-50"
+      className={`flex-1 bg-gray-50 ${className || ""}`}
       style={[
         {
           paddingTop: insets.top,

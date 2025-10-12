@@ -1,13 +1,9 @@
 import { useState } from "react";
 import { View } from "react-native";
 import { Text, Button, TextInput, Snackbar } from "react-native-paper";
-import { useRehabProgramStore } from "../stores/rehabProgramStore";
-import BaseLayout from "../components/BaseLayout";
-
-interface Props {
-  onComplete: () => void;
-  onSkip: () => void;
-}
+import { useRouter } from "expo-router";
+import { useRehabProgramStore } from "../../src/stores/rehabProgramStore";
+import BaseLayout from "../../src/components/BaseLayout";
 
 const BODY_AREAS = [
   { value: "knee", label: "Knee" },
@@ -31,12 +27,13 @@ const BODY_AREAS = [
   { value: "meniscus", label: "Meniscus" },
 ];
 
-export default function RehabSetupScreen({ onComplete, onSkip }: Props) {
+export default function RehabSetupScreen() {
   const { createProgram, isLoading, error, clearError } = useRehabProgramStore();
   const [area, setArea] = useState("");
   const [side, setSide] = useState<"left" | "right" | "both" | "na" | null>(null);
   const [startDate] = useState(new Date().toISOString().split("T")[0]); // Today
   const [showAreaDropdown, setShowAreaDropdown] = useState(false);
+  const router = useRouter();
 
   const handleCreate = async () => {
     if (!area || !side) {
@@ -49,14 +46,18 @@ export default function RehabSetupScreen({ onComplete, onSkip }: Props) {
         side,
         startDate,
       });
-      onComplete();
-    } catch (err) {
+      router.replace("/home");
+    } catch {
       // Error handled by store
     }
   };
 
+  const handleSkip = () => {
+    router.replace("/home");
+  };
+
   return (
-    <BaseLayout keyboardAvoiding style={{ backgroundColor: "white" }}>
+    <BaseLayout keyboardAvoiding className="bg-white">
       <View className="mb-6 mt-4">
         <Text variant="headlineMedium" className="font-bold mb-2">
           Set your rehab focus
@@ -177,7 +178,7 @@ export default function RehabSetupScreen({ onComplete, onSkip }: Props) {
           <Text>Start Rehab</Text>
         </Button>
 
-        <Button mode="text" onPress={onSkip} disabled={isLoading}>
+        <Button mode="text" onPress={handleSkip} disabled={isLoading}>
           <Text>Skip for now</Text>
         </Button>
       </View>

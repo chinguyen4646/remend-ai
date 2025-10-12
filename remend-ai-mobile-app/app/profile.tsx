@@ -1,20 +1,18 @@
 import { useEffect, useState } from "react";
 import { View, RefreshControl, ScrollView } from "react-native";
 import { Text, Card, Button, ActivityIndicator } from "react-native-paper";
-import { authApi } from "../api/auth";
-import type { User } from "../types/auth";
-import BaseLayout from "../components/BaseLayout";
+import { useRouter } from "expo-router";
+import { authApi } from "../src/api/auth";
+import type { User } from "../src/types/auth";
+import { useAuthStore } from "../src/stores/authStore";
+import BaseLayout from "../src/components/BaseLayout";
 
-interface Props {
-  onBack: () => void;
-  onLogout: () => void;
-}
-
-export default function ProfileScreen({ onBack, onLogout }: Props) {
+export default function ProfileScreen() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   const fetchUser = async () => {
     try {
@@ -38,6 +36,15 @@ export default function ProfileScreen({ onBack, onLogout }: Props) {
     fetchUser();
   };
 
+  const handleBack = () => {
+    router.back();
+  };
+
+  const handleLogout = async () => {
+    await useAuthStore.getState().logout();
+    router.replace("/(auth)/login");
+  };
+
   if (isLoading) {
     return (
       <View className="flex-1 justify-center items-center bg-white">
@@ -49,7 +56,7 @@ export default function ProfileScreen({ onBack, onLogout }: Props) {
   if (error) {
     return (
       <View className="flex-1 bg-white p-6">
-        <Button mode="text" onPress={onBack} className="self-start mb-4">
+        <Button mode="text" onPress={handleBack} className="self-start mb-4">
           <Text>← Back</Text>
         </Button>
         <View className="flex-1 justify-center items-center">
@@ -71,7 +78,7 @@ export default function ProfileScreen({ onBack, onLogout }: Props) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
       >
-        <Button mode="text" onPress={onBack} className="self-start mb-4">
+        <Button mode="text" onPress={handleBack} className="self-start mb-4">
           <Text>← Back</Text>
         </Button>
 
@@ -149,7 +156,7 @@ export default function ProfileScreen({ onBack, onLogout }: Props) {
           </Card.Content>
         </Card>
 
-        <Button mode="outlined" onPress={onLogout} className="mt-4" textColor="#dc2626">
+        <Button mode="outlined" onPress={handleLogout} className="mt-4" textColor="#dc2626">
           <Text>Sign Out</Text>
         </Button>
       </ScrollView>

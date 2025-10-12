@@ -1,25 +1,30 @@
 import { useState } from "react";
 import { View } from "react-native";
-import { Text, Card } from "react-native-paper";
-import { useAuthStore } from "../stores/authStore";
-import BaseLayout from "../components/BaseLayout";
+import { Text, Card, ActivityIndicator } from "react-native-paper";
+import { useRouter } from "expo-router";
+import { useAuthStore } from "../../src/stores/authStore";
+import BaseLayout from "../../src/components/BaseLayout";
 
-interface Props {
-  onComplete: () => void;
-}
-
-export default function ModePickerScreen({ onComplete }: Props) {
+export default function ModePickerScreen() {
   const { updateMode, isLoading, error, clearError } = useAuthStore();
   const [selectedMode, setSelectedMode] = useState<"rehab" | "maintenance" | "general" | null>(
     null,
   );
+  const router = useRouter();
 
   const handleModeSelect = async (mode: "rehab" | "maintenance" | "general") => {
     try {
       clearError();
       setSelectedMode(mode);
       await updateMode(mode);
-      onComplete();
+      // Route directly to the appropriate screen based on mode
+      if (mode === "rehab") {
+        router.replace("/(onboarding)/rehab-setup");
+      } else if (mode === "maintenance") {
+        router.replace("/maintenance-home");
+      } else {
+        router.replace("/general-home");
+      }
     } catch (err) {
       setSelectedMode(null);
     }
@@ -84,10 +89,8 @@ export default function ModePickerScreen({ onComplete }: Props) {
       </View>
 
       {isLoading && selectedMode && (
-        <View className="mt-6">
-          <Text variant="bodyMedium" className="text-center text-gray-600">
-            Setting up {selectedMode} mode...
-          </Text>
+        <View className="mt-6 items-center">
+          <ActivityIndicator size="large" />
         </View>
       )}
 

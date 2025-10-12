@@ -1,47 +1,38 @@
 import { useState } from "react";
 import { View } from "react-native";
 import { TextInput, Button, Text, Snackbar } from "react-native-paper";
-import { useAuthStore } from "../stores/authStore";
-import BaseLayout from "../components/BaseLayout";
+import { useRouter } from "expo-router";
+import { useAuthStore } from "../../src/stores/authStore";
+import BaseLayout from "../../src/components/BaseLayout";
 
-interface Props {
-  onNavigateToLogin: () => void;
-}
-
-export default function RegisterScreen({ onNavigateToLogin }: Props) {
-  const [fullName, setFullName] = useState("");
+export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { register, isLoading, error, clearError } = useAuthStore();
+  const { login, isLoading, error, clearError } = useAuthStore();
+  const router = useRouter();
 
-  const handleRegister = async () => {
+  const handleLogin = async () => {
     try {
-      await register({ email, password, fullName: fullName || undefined });
-    } catch (err) {
+      await login({ email, password });
+      // After successful login, redirect to index which will check auth and route appropriately
+      router.replace("/");
+    } catch {
       // Error handled by store
     }
   };
 
   return (
-    <BaseLayout keyboardAvoiding centered style={{ backgroundColor: "white" }}>
+    <BaseLayout keyboardAvoiding centered className="bg-white">
       <View className="mb-8">
         <Text variant="headlineLarge" className="font-bold mb-2">
-          Create Account
+          Welcome to Remend AI
         </Text>
         <Text variant="bodyLarge" className="text-gray-600">
-          Join Remend AI to start your recovery
+          Sign in to continue your rehab journey
         </Text>
       </View>
 
       <View className="gap-4">
-        <TextInput
-          label="Full Name (Optional)"
-          value={fullName}
-          onChangeText={setFullName}
-          mode="outlined"
-          disabled={isLoading}
-        />
-
         <TextInput
           label="Email"
           value={email}
@@ -59,21 +50,20 @@ export default function RegisterScreen({ onNavigateToLogin }: Props) {
           secureTextEntry
           mode="outlined"
           disabled={isLoading}
-          placeholder="Minimum 8 characters"
         />
 
         <Button
           mode="contained"
-          onPress={handleRegister}
+          onPress={handleLogin}
           loading={isLoading}
-          disabled={isLoading || !email || !password || password.length < 8}
+          disabled={isLoading || !email || !password}
           className="mt-2"
         >
-          <Text>Create Account</Text>
+          <Text>Sign In</Text>
         </Button>
 
-        <Button mode="text" onPress={onNavigateToLogin} disabled={isLoading}>
-          <Text>Already have an account? Sign In</Text>
+        <Button mode="text" onPress={() => router.push("/(auth)/register")} disabled={isLoading}>
+          <Text>Don&apos;t have an account? Register</Text>
         </Button>
       </View>
 

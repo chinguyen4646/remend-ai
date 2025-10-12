@@ -1,19 +1,15 @@
 import { useEffect } from "react";
 import { View } from "react-native";
 import { Text, Button, Card, ActivityIndicator, Banner } from "react-native-paper";
-import { useAuthStore } from "../stores/authStore";
-import { useRehabProgramStore } from "../stores/rehabProgramStore";
-import BaseLayout from "../components/BaseLayout";
+import { useRouter } from "expo-router";
+import { useAuthStore } from "../src/stores/authStore";
+import { useRehabProgramStore } from "../src/stores/rehabProgramStore";
+import BaseLayout from "../src/components/BaseLayout";
 
-interface Props {
-  onSetupProgram: () => void;
-  onNavigateToProfile: () => void;
-  onLogout: () => void;
-}
-
-export default function RehabHomeScreen({ onSetupProgram, onNavigateToProfile, onLogout }: Props) {
+export default function RehabHomeScreen() {
   const { user } = useAuthStore();
   const { activeProgram, isLoading, loadActiveProgram } = useRehabProgramStore();
+  const router = useRouter();
 
   useEffect(() => {
     loadActiveProgram();
@@ -27,6 +23,19 @@ export default function RehabHomeScreen({ onSetupProgram, onNavigateToProfile, o
     );
   }
 
+  const handleSetupProgram = () => {
+    router.push("/(onboarding)/rehab-setup");
+  };
+
+  const handleNavigateToProfile = () => {
+    router.push("/profile");
+  };
+
+  const handleLogout = async () => {
+    await useAuthStore.getState().logout();
+    router.replace("/(auth)/login");
+  };
+
   return (
     <BaseLayout>
       <View className="mb-6 flex-row justify-between items-start">
@@ -38,7 +47,7 @@ export default function RehabHomeScreen({ onSetupProgram, onNavigateToProfile, o
             Welcome back, {user?.fullName || "there"}
           </Text>
         </View>
-        <Button mode="text" onPress={onNavigateToProfile} compact>
+        <Button mode="text" onPress={handleNavigateToProfile} compact>
           <Text>Me</Text>
         </Button>
       </View>
@@ -50,7 +59,7 @@ export default function RehabHomeScreen({ onSetupProgram, onNavigateToProfile, o
           actions={[
             {
               label: "Create Program",
-              onPress: onSetupProgram,
+              onPress: handleSetupProgram,
             },
           ]}
         >
@@ -93,7 +102,7 @@ export default function RehabHomeScreen({ onSetupProgram, onNavigateToProfile, o
         </Card.Content>
       </Card>
 
-      <Button mode="outlined" onPress={onLogout} className="mt-4" textColor="#dc2626">
+      <Button mode="outlined" onPress={handleLogout} className="mt-4" textColor="#dc2626">
         <Text>Sign Out</Text>
       </Button>
     </BaseLayout>

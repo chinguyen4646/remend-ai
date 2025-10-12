@@ -1,28 +1,34 @@
 import { View } from "react-native";
 import { Text, Button, Card } from "react-native-paper";
-import { useAuthStore } from "../stores/authStore";
-import BaseLayout from "../components/BaseLayout";
+import { useRouter } from "expo-router";
+import { useAuthStore } from "../src/stores/authStore";
+import BaseLayout from "../src/components/BaseLayout";
 
-interface Props {
-  onNavigateToProfile: () => void;
-  onLogout: () => void;
-}
-
-export default function GeneralHomeScreen({ onNavigateToProfile, onLogout }: Props) {
+export default function MaintenanceHomeScreen() {
   const { user } = useAuthStore();
+  const router = useRouter();
+
+  const handleNavigateToProfile = () => {
+    router.push("/profile");
+  };
+
+  const handleLogout = async () => {
+    await useAuthStore.getState().logout();
+    router.replace("/(auth)/login");
+  };
 
   return (
     <BaseLayout>
       <View className="mb-6 flex-row justify-between items-start">
         <View className="flex-1">
           <Text variant="headlineMedium" className="font-bold mb-2">
-            General Mode 😊
+            Maintenance Mode 💪
           </Text>
           <Text variant="bodyLarge" className="text-gray-600">
-            How are you feeling today, {user?.fullName || "there"}?
+            Keep up the great work, {user?.fullName || "there"}
           </Text>
         </View>
-        <Button mode="text" onPress={onNavigateToProfile} compact>
+        <Button mode="text" onPress={handleNavigateToProfile} compact>
           <Text>Me</Text>
         </Button>
       </View>
@@ -33,14 +39,14 @@ export default function GeneralHomeScreen({ onNavigateToProfile, onLogout }: Pro
             Coming Soon
           </Text>
           <Text variant="bodyMedium" className="text-gray-600">
-            • Daily check-ins
-            {"\n"}• Wellness tracking
-            {"\n"}• Personalized tips
+            • Daily wellness logging
+            {"\n"}• Strength tracking
+            {"\n"}• Prevention insights
           </Text>
         </Card.Content>
       </Card>
 
-      <Button mode="outlined" onPress={onLogout} className="mt-4" textColor="#dc2626">
+      <Button mode="outlined" onPress={handleLogout} className="mt-4" textColor="#dc2626">
         <Text>Sign Out</Text>
       </Button>
     </BaseLayout>
