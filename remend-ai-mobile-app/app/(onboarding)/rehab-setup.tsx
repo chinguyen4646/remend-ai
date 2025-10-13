@@ -4,6 +4,7 @@ import { Text, Button, TextInput, Snackbar } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { useRehabProgramStore } from "../../src/stores/rehabProgramStore";
 import BaseLayout from "../../src/components/BaseLayout";
+import { todayLocal } from "../../src/utils/dates";
 
 const BODY_AREAS = [
   { value: "knee", label: "Knee" },
@@ -31,7 +32,7 @@ export default function RehabSetupScreen() {
   const { createProgram, isLoading, error, clearError } = useRehabProgramStore();
   const [area, setArea] = useState("");
   const [side, setSide] = useState<"left" | "right" | "both" | "na" | null>(null);
-  const [startDate] = useState(new Date().toISOString().split("T")[0]); // Today
+  const [startDate] = useState(todayLocal());
   const [showAreaDropdown, setShowAreaDropdown] = useState(false);
   const router = useRouter();
 

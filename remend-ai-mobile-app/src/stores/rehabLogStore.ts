@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { rehabLogsApi } from "../api/rehabLogs";
 import type { RehabLog, CreateRehabLogData } from "../types/rehabLog";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { todayLocal } from "../utils/dates";
 
 interface RehabLogState {
   logs: RehabLog[];
@@ -30,7 +31,7 @@ export const useRehabLogStore = create<RehabLogState>((set, get) => ({
       });
 
       // Check if today's date exists in logs
-      const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+      const today = todayLocal();
       const hasLoggedToday = logs.some((log) => log.date === today);
 
       set({ logs, hasLoggedToday, isLoading: false });

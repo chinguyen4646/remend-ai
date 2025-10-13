@@ -15,7 +15,13 @@ export default class RehabLog extends BaseModel {
   declare programId: number;
 
   @column.date({
-    serialize: (value: DateTime | null) => value?.toISODate() ?? null,
+    serialize: (value: DateTime | string | null) => {
+      if (!value) return null;
+      if (typeof value === "string") return value;
+      return value.toISODate();
+    },
+    prepare: (value: string | DateTime) =>
+      typeof value === "string" ? DateTime.fromISO(value) : value,
   })
   declare date: DateTime;
 

@@ -7,6 +7,7 @@ import { useRehabProgramStore } from "../src/stores/rehabProgramStore";
 import { useRehabLogStore } from "../src/stores/rehabLogStore";
 import BaseLayout from "../src/components/BaseLayout";
 import Sparkline from "../src/components/Sparkline";
+import { formatCalendarDate } from "../src/utils/dates";
 
 export default function RehabHomeScreen() {
   const { user } = useAuthStore();
@@ -150,7 +151,7 @@ export default function RehabHomeScreen() {
                 {logs.map((log) => (
                   <View key={log.id} className="border-l-4 border-indigo-500 pl-3 py-2">
                     <Text variant="labelLarge" className="font-bold mb-1">
-                      {log.date}
+                      {formatCalendarDate(log.date)}
                     </Text>
                     <View className="flex-row gap-4">
                       <Text variant="bodyMedium">Pain: {log.pain}</Text>

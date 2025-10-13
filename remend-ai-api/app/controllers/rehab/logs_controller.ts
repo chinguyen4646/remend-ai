@@ -2,7 +2,7 @@ import type { HttpContext } from "@adonisjs/core/http";
 import RehabLog from "#models/rehab_log";
 import RehabProgram from "#models/rehab_program";
 import { createRehabLogValidator, getRehabLogsValidator } from "#validators/rehab/log";
-import { toUtcStartOfLocalDay, todayUtcFromLocal, isValidIsoDate } from "#utils/dates";
+import { todayInTimezone, isValidIsoDate } from "#utils/dates";
 import logger from "@adonisjs/core/services/logger";
 
 export default class LogsController {
@@ -10,6 +10,12 @@ export default class LogsController {
     const user = auth.user!;
     const data = await request.validateUsing(createRehabLogValidator);
     const tz = (request as any).requestTz as string;
+
+    if (!tz) {
+      return response.badRequest({
+        errors: [{ message: "Timezone required via X-Timezone header" }],
+      });
+    }
 
     // Verify program exists and belongs to user
     const program = await RehabProgram.find(data.programId);
@@ -28,17 +34,17 @@ export default class LogsController {
       });
     }
 
-    // Validate and transform date
-    let logDate;
+    // Validate and get date string
+    let logDate: string;
     if (data.date) {
       if (!isValidIsoDate(data.date)) {
         return response.unprocessableEntity({
           errors: [{ message: "Invalid date format. Use YYYY-MM-DD" }],
         });
       }
-      logDate = toUtcStartOfLocalDay(data.date, tz);
+      logDate = data.date;
     } else {
-      logDate = todayUtcFromLocal(tz);
+      logDate = todayInTimezone(tz);
     }
 
     try {
@@ -54,7 +60,7 @@ export default class LogsController {
       });
 
       logger.info(
-        { userId: user.id, programId: data.programId, date: logDate.toISODate() },
+        { userId: user.id, programId: data.programId, date: logDate },
         "Rehab log created",
       );
 
@@ -110,11 +116,11 @@ export default class LogsController {
 
     // Apply date range filter using user's timezone
     if (params.range) {
-      const { rangeLastNDaysUtc } = await import("#utils/dates");
+      const { rangeLastNDays } = await import("#utils/dates");
       const days = params.range === "last_7" ? 7 : params.range === "last_14" ? 14 : 30;
-      const { start, end } = rangeLastNDaysUtc(days, tz);
+      const { start, end } = rangeLastNDays(days, tz);
 
-      query.where("date", ">=", start.toISODate()!).andWhere("date", "<=", end.toISODate()!);
+      query.where("date", ">=", start).andWhere("date", "<=", end);
     }
 
     const logs = await query.orderBy("date", "desc").preload("program");
