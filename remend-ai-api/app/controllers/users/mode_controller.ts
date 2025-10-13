@@ -53,7 +53,7 @@ export default class ModeController {
       },
       message:
         previousMode === "rehab" && data.mode !== "rehab"
-          ? "Your active rehab program has been paused. Switch back to rehab mode to resume tracking."
+          ? "Your rehab program has been paused. You can resume anytime by switching back to Rehab mode."
           : undefined,
     });
   }

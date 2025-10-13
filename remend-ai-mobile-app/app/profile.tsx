@@ -6,12 +6,14 @@ import { authApi } from "../src/api/auth";
 import type { User } from "../src/types/auth";
 import { useAuthStore } from "../src/stores/authStore";
 import BaseLayout from "../src/components/BaseLayout";
+import ModeSwitchModal from "../src/components/ModeSwitchModal";
 
 export default function ProfileScreen() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showModeSwitchModal, setShowModeSwitchModal] = useState(false);
   const router = useRouter();
 
   const fetchUser = async () => {
@@ -19,7 +21,7 @@ export default function ProfileScreen() {
       setError(null);
       const response = await authApi.me();
       setUser(response.user);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.message || "Failed to load profile");
     } finally {
       setIsLoading(false);
@@ -165,9 +167,14 @@ export default function ProfileScreen() {
             </View>
 
             {user?.mode && (
-              <Button mode="contained" onPress={handleGoToHome} className="mt-4" icon="home">
-                Go to {user.mode.charAt(0).toUpperCase() + user.mode.slice(1)} Home
-              </Button>
+              <View className="gap-2 mt-4">
+                <Button mode="contained" onPress={handleGoToHome} icon="home">
+                  <Text>Go to {user.mode.charAt(0).toUpperCase() + user.mode.slice(1)} Home</Text>
+                </Button>
+                <Button mode="outlined" onPress={() => setShowModeSwitchModal(true)}>
+                  <Text>Change Mode</Text>
+                </Button>
+              </View>
             )}
           </Card.Content>
         </Card>
@@ -176,6 +183,16 @@ export default function ProfileScreen() {
           <Text>Sign Out</Text>
         </Button>
       </ScrollView>
+
+      <ModeSwitchModal
+        visible={showModeSwitchModal}
+        onDismiss={() => {
+          setShowModeSwitchModal(false);
+          // Refresh user data after modal closes
+          fetchUser();
+        }}
+        currentMode={user?.mode || null}
+      />
     </BaseLayout>
   );
 }

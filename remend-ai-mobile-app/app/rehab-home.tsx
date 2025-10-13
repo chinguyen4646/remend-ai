@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { View, RefreshControl, ScrollView } from "react-native";
 import { Text, Button, Card, ActivityIndicator, Banner } from "react-native-paper";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
+import { useCallback } from "react";
 import { useAuthStore } from "../src/stores/authStore";
 import { useRehabProgramStore } from "../src/stores/rehabProgramStore";
 import { useRehabLogStore } from "../src/stores/rehabLogStore";
@@ -25,6 +26,15 @@ export default function RehabHomeScreen() {
       loadLogs(activeProgram.id);
     }
   }, [activeProgram, loadLogs]);
+
+  // Reload logs when screen comes into focus (e.g., after creating a log)
+  useFocusEffect(
+    useCallback(() => {
+      if (activeProgram) {
+        loadLogs(activeProgram.id);
+      }
+    }, [activeProgram, loadLogs]),
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
