@@ -21,10 +21,12 @@ export default class ModeController {
 
     // If leaving rehab mode, auto-pause any active programs
     if (previousMode === "rehab" && data.mode !== "rehab") {
-      const pausedCount = await RehabProgram.query()
+      const pausedResult = await RehabProgram.query()
         .where("user_id", user.id)
         .where("status", "active")
         .update({ status: "paused" });
+
+      const pausedCount = Array.isArray(pausedResult) ? pausedResult.length : pausedResult;
 
       if (pausedCount > 0) {
         logger.info(

@@ -4,6 +4,7 @@ import RehabProgram from "#models/rehab_program";
 import { createRehabLogValidator, getRehabLogsValidator } from "#validators/rehab/log";
 import { todayInTimezone, isValidIsoDate } from "#utils/dates";
 import logger from "@adonisjs/core/services/logger";
+import { DateTime } from "luxon";
 
 export default class LogsController {
   async create({ auth, request, response }: HttpContext) {
@@ -51,7 +52,7 @@ export default class LogsController {
       const log = await RehabLog.create({
         userId: user.id,
         programId: data.programId,
-        date: logDate,
+        date: DateTime.fromISO(logDate),
         pain: data.pain,
         stiffness: data.stiffness,
         swelling: data.swelling || null,
