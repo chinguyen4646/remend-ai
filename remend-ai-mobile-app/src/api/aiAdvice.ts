@@ -2,6 +2,15 @@ import { api } from "./client";
 import type { AIAdvice } from "../types/aiAdvice";
 
 /**
+ * Generate a simple idempotency key based on programId and timestamp
+ * This helps prevent duplicate requests from being processed server-side
+ */
+function generateIdempotencyKey(programId: number): string {
+  const timestamp = Math.floor(Date.now() / 60000); // 1-minute granularity
+  return `ai-advice-${programId}-${timestamp}`;
+}
+
+/**
  * Request AI-generated rehabilitation advice
  * @param programId - The rehab program to get advice for
  * @returns AI advice with summary, actions, and optional caution
@@ -9,9 +18,15 @@ import type { AIAdvice } from "../types/aiAdvice";
  */
 export async function getRehabAdvice(programId: number): Promise<AIAdvice> {
   try {
-    const response = await api.post<AIAdvice>("/api/sessions/rehab-summary", {
-      programId,
-    });
+    const response = await api.post<AIAdvice>(
+      "/api/sessions/rehab-summary",
+      { programId },
+      {
+        headers: {
+          "Idempotency-Key": generateIdempotencyKey(programId),
+        },
+      },
+    );
 
     return response.data;
   } catch (error: any) {

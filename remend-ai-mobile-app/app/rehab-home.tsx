@@ -10,6 +10,8 @@ import { useAIAdviceStore } from "../src/stores/aiAdviceStore";
 import BaseLayout from "../src/components/BaseLayout";
 import Sparkline from "../src/components/Sparkline";
 import AIAdviceCard from "../src/components/AIAdviceCard";
+import AIAdviceErrorBoundary from "../src/components/AIAdviceErrorBoundary";
+import AIAdviceLoadingSkeleton from "../src/components/AIAdviceLoadingSkeleton";
 import { formatCalendarDate } from "../src/utils/dates";
 
 export default function RehabHomeScreen() {
@@ -19,8 +21,7 @@ export default function RehabHomeScreen() {
   const { currentAdvice, isLoading: aiLoading, error: aiError, fetchAdvice } = useAIAdviceStore();
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
-  const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
   useEffect(() => {
     loadActiveProgram();
@@ -41,14 +42,6 @@ export default function RehabHomeScreen() {
     }, [activeProgram, loadLogs]),
   );
 
-  // Show error snackbar when AI advice fails
-  useEffect(() => {
-    if (aiError) {
-      setSnackbarMessage(aiError);
-      setSnackbarVisible(true);
-    }
-  }, [aiError]);
-
   const onRefresh = async () => {
     setRefreshing(true);
     await loadActiveProgram();
@@ -62,8 +55,7 @@ export default function RehabHomeScreen() {
     if (!activeProgram) return;
 
     if (logs.length === 0) {
-      setSnackbarMessage("You need at least one log entry to get AI feedback.");
-      setSnackbarVisible(true);
+      setInfoMessage("You need at least one log entry to get AI feedback.");
       return;
     }
 
@@ -225,8 +217,15 @@ export default function RehabHomeScreen() {
               </Card.Content>
             </Card>
 
+            {/* AI Advice Loading Skeleton */}
+            {aiLoading && <AIAdviceLoadingSkeleton />}
+
             {/* AI Advice Card */}
-            {currentAdvice && <AIAdviceCard advice={currentAdvice} />}
+            {!aiLoading && currentAdvice && (
+              <AIAdviceErrorBoundary>
+                <AIAdviceCard advice={currentAdvice} />
+              </AIAdviceErrorBoundary>
+            )}
           </>
         )}
         {activeProgram && logs.length === 0 && !logsLoading && (
@@ -246,17 +245,22 @@ export default function RehabHomeScreen() {
         </Button>
       </ScrollView>
 
-      {/* Snackbar for errors and notifications */}
+      {/* Snackbar for errors and info messages */}
       <Snackbar
-        visible={snackbarVisible}
-        onDismiss={() => setSnackbarVisible(false)}
-        duration={4000}
+        visible={!!aiError || !!infoMessage}
+        onDismiss={() => setInfoMessage(null)}
+        duration={6000}
         action={{
-          label: "Dismiss",
-          onPress: () => setSnackbarVisible(false),
+          label: aiError ? "Retry" : "Dismiss",
+          onPress: () => {
+            setInfoMessage(null);
+            if (aiError) {
+              handleGetAIFeedback();
+            }
+          },
         }}
       >
-        {snackbarMessage}
+        {aiError || infoMessage}
       </Snackbar>
     </BaseLayout>
   );
