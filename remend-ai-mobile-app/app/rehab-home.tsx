@@ -1,21 +1,26 @@
 import { useEffect, useState } from "react";
 import { View, RefreshControl, ScrollView } from "react-native";
-import { Text, Button, Card, ActivityIndicator, Banner } from "react-native-paper";
+import { Text, Button, Card, ActivityIndicator, Banner, Snackbar } from "react-native-paper";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useCallback } from "react";
 import { useAuthStore } from "../src/stores/authStore";
 import { useRehabProgramStore } from "../src/stores/rehabProgramStore";
 import { useRehabLogStore } from "../src/stores/rehabLogStore";
+import { useAIAdviceStore } from "../src/stores/aiAdviceStore";
 import BaseLayout from "../src/components/BaseLayout";
 import Sparkline from "../src/components/Sparkline";
+import AIAdviceCard from "../src/components/AIAdviceCard";
 import { formatCalendarDate } from "../src/utils/dates";
 
 export default function RehabHomeScreen() {
   const { user } = useAuthStore();
   const { activeProgram, isLoading, loadActiveProgram } = useRehabProgramStore();
   const { logs, hasLoggedToday, loadLogs, isLoading: logsLoading } = useRehabLogStore();
+  const { currentAdvice, isLoading: aiLoading, error: aiError, fetchAdvice } = useAIAdviceStore();
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
 
   useEffect(() => {
     loadActiveProgram();
@@ -36,6 +41,14 @@ export default function RehabHomeScreen() {
     }, [activeProgram, loadLogs]),
   );
 
+  // Show error snackbar when AI advice fails
+  useEffect(() => {
+    if (aiError) {
+      setSnackbarMessage(aiError);
+      setSnackbarVisible(true);
+    }
+  }, [aiError]);
+
   const onRefresh = async () => {
     setRefreshing(true);
     await loadActiveProgram();
@@ -43,6 +56,21 @@ export default function RehabHomeScreen() {
       await loadLogs(activeProgram.id);
     }
     setRefreshing(false);
+  };
+
+  const handleGetAIFeedback = async () => {
+    if (!activeProgram) return;
+
+    if (logs.length === 0) {
+      setSnackbarMessage("You need at least one log entry to get AI feedback.");
+      setSnackbarVisible(true);
+      return;
+    }
+
+    // Get the most recent log date for cache validation
+    const mostRecentLogDate = logs[0].date;
+
+    await fetchAdvice(activeProgram.id, mostRecentLogDate);
   };
 
   if (isLoading) {
@@ -142,47 +170,64 @@ export default function RehabHomeScreen() {
           </Card>
         )}
         {activeProgram && logs.length > 0 && (
-          <Card className="mb-4">
-            <Card.Content>
-              <Text variant="titleLarge" className="font-bold mb-4">
-                Last 14 Days
-              </Text>
+          <>
+            <Card className="mb-4">
+              <Card.Content>
+                <View className="flex-row justify-between items-center mb-4">
+                  <Text variant="titleLarge" className="font-bold">
+                    Last 14 Days
+                  </Text>
+                  <Button
+                    mode="contained-tonal"
+                    onPress={handleGetAIFeedback}
+                    icon="lightbulb-outline"
+                    loading={aiLoading}
+                    disabled={aiLoading}
+                    compact
+                  >
+                    <Text>AI Feedback</Text>
+                  </Button>
+                </View>
 
-              {/* Sparkline */}
-              <View className="mb-4 items-center">
-                <Text variant="labelMedium" className="text-gray-600 mb-2">
-                  Pain Trend
-                </Text>
-                <Sparkline data={painScores} width={280} height={60} />
-              </View>
+                {/* Sparkline */}
+                <View className="mb-4 items-center">
+                  <Text variant="labelMedium" className="text-gray-600 mb-2">
+                    Pain Trend
+                  </Text>
+                  <Sparkline data={painScores} width={280} height={60} />
+                </View>
 
-              {/* Logs List */}
-              <View className="gap-3">
-                {logs.map((log) => (
-                  <View key={log.id} className="border-l-4 border-indigo-500 pl-3 py-2">
-                    <Text variant="labelLarge" className="font-bold mb-1">
-                      {formatCalendarDate(log.date)}
-                    </Text>
-                    <View className="flex-row gap-4">
-                      <Text variant="bodyMedium">Pain: {log.pain}</Text>
-                      <Text variant="bodyMedium">Stiffness: {log.stiffness}</Text>
-                      <Text variant="bodyMedium">Swelling: {log.swelling}</Text>
+                {/* Logs List */}
+                <View className="gap-3">
+                  {logs.map((log) => (
+                    <View key={log.id} className="border-l-4 border-indigo-500 pl-3 py-2">
+                      <Text variant="labelLarge" className="font-bold mb-1">
+                        {formatCalendarDate(log.date)}
+                      </Text>
+                      <View className="flex-row gap-4">
+                        <Text variant="bodyMedium">Pain: {log.pain}</Text>
+                        <Text variant="bodyMedium">Stiffness: {log.stiffness}</Text>
+                        <Text variant="bodyMedium">Swelling: {log.swelling}</Text>
+                      </View>
+                      {log.activityLevel && (
+                        <Text variant="bodySmall" className="text-gray-600 mt-1">
+                          Activity: {log.activityLevel}
+                        </Text>
+                      )}
+                      {log.notes && (
+                        <Text variant="bodySmall" className="text-gray-600 mt-1" numberOfLines={2}>
+                          {log.notes}
+                        </Text>
+                      )}
                     </View>
-                    {log.activityLevel && (
-                      <Text variant="bodySmall" className="text-gray-600 mt-1">
-                        Activity: {log.activityLevel}
-                      </Text>
-                    )}
-                    {log.notes && (
-                      <Text variant="bodySmall" className="text-gray-600 mt-1" numberOfLines={2}>
-                        {log.notes}
-                      </Text>
-                    )}
-                  </View>
-                ))}
-              </View>
-            </Card.Content>
-          </Card>
+                  ))}
+                </View>
+              </Card.Content>
+            </Card>
+
+            {/* AI Advice Card */}
+            {currentAdvice && <AIAdviceCard advice={currentAdvice} />}
+          </>
         )}
         {activeProgram && logs.length === 0 && !logsLoading && (
           <Card className="mb-4">
@@ -200,6 +245,19 @@ export default function RehabHomeScreen() {
           <Text>Sign Out</Text>
         </Button>
       </ScrollView>
+
+      {/* Snackbar for errors and notifications */}
+      <Snackbar
+        visible={snackbarVisible}
+        onDismiss={() => setSnackbarVisible(false)}
+        duration={4000}
+        action={{
+          label: "Dismiss",
+          onPress: () => setSnackbarVisible(false),
+        }}
+      >
+        {snackbarMessage}
+      </Snackbar>
     </BaseLayout>
   );
 }

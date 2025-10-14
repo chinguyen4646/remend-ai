@@ -5,12 +5,14 @@ import Slider from "@react-native-community/slider";
 import { useRouter } from "expo-router";
 import { useRehabProgramStore } from "../../src/stores/rehabProgramStore";
 import { useRehabLogStore } from "../../src/stores/rehabLogStore";
+import { useAIAdviceStore } from "../../src/stores/aiAdviceStore";
 import BaseLayout from "../../src/components/BaseLayout";
 
 export default function LogFormScreen() {
   const router = useRouter();
   const { activeProgram } = useRehabProgramStore();
   const { createLog, isLoading, error, clearError } = useRehabLogStore();
+  const { invalidateCache } = useAIAdviceStore();
 
   // Form state
   const [pain, setPain] = useState(0);
@@ -33,6 +35,10 @@ export default function LogFormScreen() {
         activityLevel: activityLevel || undefined,
         notes: notes.trim() || undefined,
       });
+
+      // Invalidate AI cache since we have a new log
+      await invalidateCache(activeProgram.id);
+
       // Success! Go back to home
       router.back();
     } catch (err) {
