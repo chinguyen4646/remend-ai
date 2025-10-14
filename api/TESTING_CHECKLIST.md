@@ -5,7 +5,7 @@
 1. Start the API server:
 
 ```bash
-cd remend-ai-api
+cd api
 npm run dev
 ```
 

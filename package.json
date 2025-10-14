@@ -2,28 +2,28 @@
   "name": "remend-ai",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"cd remend-ai-api && npm run dev\" \"cd remend-ai-mobile-app && npx expo start --port 8081\"",
-    "dev:api": "cd remend-ai-api && npm run dev",
-    "dev:mobile": "cd remend-ai-mobile-app && npx expo start",
-    "dev:i": "concurrently \"cd remend-ai-api && npm run dev\" \"cd remend-ai-mobile-app && npx expo start --ios --port 8081\"",
-    "dev:a": "concurrently \"cd remend-ai-api && npm run dev\" \"cd remend-ai-mobile-app && npx expo start --android --port 8081\"",
-    "lint": "eslint remend-ai-api remend-ai-mobile-app --ext .ts,.tsx",
+    "dev": "concurrently \"cd api && npm run dev\" \"cd mobile-app && npx expo start --port 8081\"",
+    "dev:api": "cd api && npm run dev",
+    "dev:mobile": "cd mobile-app && npx expo start",
+    "dev:i": "concurrently \"cd api && npm run dev\" \"cd mobile-app && npx expo start --ios --port 8081\"",
+    "dev:a": "concurrently \"cd api && npm run dev\" \"cd mobile-app && npx expo start --android --port 8081\"",
+    "lint": "eslint api mobile-app --ext .ts,.tsx",
     "format": "prettier --write .",
     "prepare": "husky"
   },
   "lint-staged": {
-    "remend-ai-api/**/*.{ts,tsx,js,jsx}": [
-      "bash -c 'cd remend-ai-api && eslint --fix \"$(echo \"$0\" | sed \"s|.*/remend-ai-api/||\" )\"'",
+    "api/**/*.{ts,tsx,js,jsx}": [
+      "bash -c 'cd api && eslint --fix \"$(echo \"$0\" | sed \"s|.*/api/||\" )\"'",
       "prettier --write"
     ],
-    "remend-ai-api/**/*.{json,md}": [
+    "api/**/*.{json,md}": [
       "prettier --write"
     ],
-    "remend-ai-mobile-app/**/*.{ts,tsx,js,jsx}": [
-      "bash -c 'cd remend-ai-mobile-app && eslint --fix \"$(echo \"$0\" | sed \"s|.*/remend-ai-mobile-app/||\" )\"'",
+    "mobile-app/**/*.{ts,tsx,js,jsx}": [
+      "bash -c 'cd mobile-app && eslint --fix \"$(echo \"$0\" | sed \"s|.*/mobile-app/||\" )\"'",
       "prettier --write"
     ],
-    "remend-ai-mobile-app/**/*.{json,md}": [
+    "mobile-app/**/*.{json,md}": [
       "prettier --write"
     ]
   },

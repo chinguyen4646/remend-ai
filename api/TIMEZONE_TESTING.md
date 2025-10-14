@@ -15,7 +15,7 @@ The API now handles dates in a timezone-aware manner:
 1. Start the API:
 
 ```bash
-cd remend-ai-api
+cd api
 npm run dev
 ```
 

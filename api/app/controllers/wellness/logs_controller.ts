@@ -3,7 +3,7 @@ import WellnessLog from "#models/wellness_log";
 import { createWellnessLogValidator, getWellnessLogsValidator } from "#validators/wellness/log";
 import { todayInTimezone, rangeLastNDays, isValidIsoDate } from "#utils/dates";
 import logger from "@adonisjs/core/services/logger";
-import { DateTime } from "luxon";
+import { DateTime } from "../../../node_modules/@types/luxon/index.js";
 
 export default class LogsController {
   async create({ auth, request, response }: HttpContext) {

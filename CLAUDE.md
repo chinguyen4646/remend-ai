@@ -6,8 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Remend AI is a full-stack monorepo containing:
 
-- **remend-ai-api**: AdonisJS 6 backend API with PostgreSQL
-- **remend-ai-mobile-app**: Expo/React Native mobile application with NativeWind (TailwindCSS)
+- **api**: AdonisJS 6 backend API with PostgreSQL
+- **mobile-app**: Expo/React Native mobile application with NativeWind (TailwindCSS)
 
 ## Development Commands
 
@@ -26,7 +26,7 @@ npm run dev-i
 1. **Backend Setup**:
 
 ```bash
-cd remend-ai-api
+cd api
 cp .env.example .env
 # Edit .env and add your database credentials
 node ace generate:key  # Add APP_KEY to .env
@@ -38,16 +38,16 @@ npm run dev  # Should run on http://localhost:3333
 2. **Frontend Setup**:
 
 ```bash
-cd remend-ai-mobile-app
+cd mobile-app
 npm install
 # .env already configured with EXPO_PUBLIC_API_URL=http://localhost:3333
 npm start  # Should run on http://localhost:8081
 ```
 
-### API (remend-ai-api)
+### API (api)
 
 ```bash
-cd remend-ai-api
+cd api
 
 # Development server with hot module reload
 npm run dev
@@ -83,10 +83,10 @@ node ace migration:fresh
 node ace generate:key
 ```
 
-### Mobile App (remend-ai-mobile-app)
+### Mobile App (mobile-app)
 
 ```bash
-cd remend-ai-mobile-app
+cd mobile-app
 
 # Start Expo dev server
 npm start
@@ -141,7 +141,7 @@ npm run web
 **Project Structure**:
 
 ```
-remend-ai-api/
+api/
 ├── app/
 │   ├── exceptions/        # Exception handlers
 │   ├── middleware/        # HTTP middleware
@@ -185,7 +185,7 @@ remend-ai-api/
 
 ### API Environment Variables
 
-Create `remend-ai-api/.env` from `.env.example`:
+Create `api/.env` from `.env.example`:
 
 ```
 PORT=3333
@@ -204,11 +204,11 @@ DB_DATABASE=<your-db-name>
 
 1. Ensure PostgreSQL is running locally
 2. Create a database matching `DB_DATABASE` in `.env`
-3. Run migrations: `cd remend-ai-api && node ace migration:run`
+3. Run migrations: `cd api && node ace migration:run`
 
 ## Key Implementation Notes
 
-- When adding new routes, edit `remend-ai-api/start/routes.ts`
+- When adding new routes, edit `api/start/routes.ts`
 - Protected routes should use `.use(middleware.auth())` from `#start/kernel`
 - User model has `fullName`, `email`, and `password` fields
 - Migrations exist for `users` and `access_tokens` tables
@@ -224,8 +224,8 @@ DB_DATABASE=<your-db-name>
   - `POST /api/auth/login` - Login user
   - `GET /api/auth/me` - Get authenticated user (protected)
   - `POST /api/auth/logout` - Logout user (protected)
-- Controller: `remend-ai-api/app/controllers/auth_controller.ts`
-- Validators: `remend-ai-api/app/validators/auth.ts`
+- Controller: `api/app/controllers/auth_controller.ts`
+- Validators: `api/app/validators/auth.ts`
 - Token-based authentication using Bearer tokens
 
 **Frontend (React Native)**:
@@ -240,7 +240,7 @@ DB_DATABASE=<your-db-name>
 
 ## Logging
 
-**Configuration**: `remend-ai-api/config/logger.ts`
+**Configuration**: `api/config/logger.ts`
 
 - Development: Pretty-printed logs with UK date format (dd-mm-yyyy HH:MM:ss UTC)
 - Production: Structured JSON logs
@@ -266,7 +266,7 @@ logger.error({ error: err.message }, "Failed to process");
 **Start server in debug mode**:
 
 ```bash
-cd remend-ai-api
+cd api
 npm run dev:debug
 ```
 
