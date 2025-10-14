@@ -188,7 +188,6 @@ remend-ai-api/
 Create `remend-ai-api/.env` from `.env.example`:
 
 ```
-TZ=UTC
 PORT=3333
 HOST=localhost
 LOG_LEVEL=info

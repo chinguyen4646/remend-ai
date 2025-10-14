@@ -1,0 +1,47 @@
+import type RehabLog from "#models/rehab_log";
+
+/**
+ * AI Advice structure returned by providers
+ */
+export interface AIAdvice {
+  /**
+   * 2-3 sentence summary of progress/trend
+   * For early snapshot (1-2 logs): brief observation without trend analysis
+   * For full feedback (3+ logs): clear trend with context
+   */
+  summary: string;
+
+  /**
+   * Actionable recommendations
+   * Early snapshot: 1-2 actions
+   * Full feedback: exactly 3 actions
+   */
+  actions: string[];
+
+  /**
+   * Warning/caution note (only for full feedback when worsening)
+   * Empty string if no concerns
+   */
+  caution: string;
+}
+
+/**
+ * Feedback mode determines prompt strategy
+ * - early: 1-2 logs, no trend analysis, conservative advice
+ * - full: 3+ logs, trend analysis, comprehensive feedback
+ */
+export type FeedbackMode = "early" | "full";
+
+/**
+ * Provider interface for AI services
+ * Allows swapping OpenAI → Claude/Gemini/etc. later
+ */
+export interface AIProvider {
+  /**
+   * Get rehab advice based on log history
+   * @param logs - Rehab logs (sorted by date, most recent first)
+   * @param mode - Feedback mode (early or full)
+   * @returns Structured advice
+   */
+  getRehabAdvice(logs: RehabLog[], mode: FeedbackMode): Promise<AIAdvice>;
+}

@@ -15,6 +15,7 @@ const ModeController = () => import("#controllers/users/mode_controller");
 const ProgramsController = () => import("#controllers/rehab/programs_controller");
 const RehabLogsController = () => import("#controllers/rehab/logs_controller");
 const WellnessLogsController = () => import("#controllers/wellness/logs_controller");
+const RehabSummaryController = () => import("#controllers/sessions/rehab_summary_controller");
 
 router.get("/", async () => {
   return {
@@ -73,4 +74,12 @@ router
     router.get("/", [WellnessLogsController, "index"]);
   })
   .prefix("/api/wellness-logs")
+  .use([middleware.auth(), middleware.timezone()]);
+
+// AI sessions (protected)
+router
+  .group(() => {
+    router.post("/rehab-summary", [RehabSummaryController, "create"]);
+  })
+  .prefix("/api/sessions")
   .use([middleware.auth(), middleware.timezone()]);
