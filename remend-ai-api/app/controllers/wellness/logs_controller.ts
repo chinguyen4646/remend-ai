@@ -1,38 +1,34 @@
 import type { HttpContext } from "@adonisjs/core/http";
 import WellnessLog from "#models/wellness_log";
 import { createWellnessLogValidator, getWellnessLogsValidator } from "#validators/wellness/log";
-import {
-  toUtcStartOfLocalDay,
-  todayUtcFromLocal,
-  rangeLastNDaysUtc,
-  isValidIsoDate,
-} from "#utils/dates";
+import { todayInTimezone, rangeLastNDays, isValidIsoDate } from "#utils/dates";
 import logger from "@adonisjs/core/services/logger";
+import { DateTime } from "luxon";
 
 export default class LogsController {
   async create({ auth, request, response }: HttpContext) {
     const user = auth.user!;
     const data = await request.validateUsing(createWellnessLogValidator);
-    const tz = (request as any).requestTz as string;
+    const tz = (request as any).requestTz as string; // Guaranteed by timezone middleware
 
-    // Validate and transform date
-    let logDate;
+    // Validate and get date string
+    let logDate: string;
     if (data.date) {
       if (!isValidIsoDate(data.date)) {
         return response.unprocessableEntity({
           errors: [{ message: "Invalid date format. Use YYYY-MM-DD" }],
         });
       }
-      logDate = toUtcStartOfLocalDay(data.date, tz);
+      logDate = data.date;
     } else {
-      logDate = todayUtcFromLocal(tz);
+      logDate = todayInTimezone(tz);
     }
 
     try {
       const log = await WellnessLog.create({
         userId: user.id,
         mode: data.mode,
-        date: logDate,
+        date: DateTime.fromISO(logDate),
         pain: data.pain || null,
         stiffness: data.stiffness || null,
         tension: data.tension || null,
@@ -41,10 +37,7 @@ export default class LogsController {
         notes: data.notes || null,
       });
 
-      logger.info(
-        { userId: user.id, mode: data.mode, date: logDate.toISODate() },
-        "Wellness log created",
-      );
+      logger.info({ userId: user.id, mode: data.mode, date: logDate }, "Wellness log created");
 
       return response.created({ log });
     } catch (error) {
@@ -68,9 +61,9 @@ export default class LogsController {
     // Apply date range filter using user's timezone
     if (params.range) {
       const days = params.range === "last_7" ? 7 : 30;
-      const { start, end } = rangeLastNDaysUtc(days, tz);
+      const { start, end } = rangeLastNDays(days, tz);
 
-      query.where("date", ">=", start.toISODate()!).andWhere("date", "<=", end.toISODate()!);
+      query.where("date", ">=", start).andWhere("date", "<=", end);
     }
 
     const logs = await query.orderBy("date", "desc");
