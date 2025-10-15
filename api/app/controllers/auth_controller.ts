@@ -61,6 +61,18 @@ export default class AuthController {
       // Verify credentials
       const user = await User.verifyCredentials(email, password);
 
+      // Update timezone from X-Timezone header if provided
+      const headerTz = request.header("X-Timezone");
+      if (headerTz && headerTz !== user.tz) {
+        const tz = resolveTimezone(headerTz);
+        logger.info(
+          { userId: user.id, oldTz: user.tz, newTz: tz },
+          "Updating user timezone on login",
+        );
+        user.tz = tz;
+        await user.save();
+      }
+
       // Generate access token
       const token = await User.accessTokens.create(user);
 

@@ -31,14 +31,14 @@ router
   })
   .prefix("/api/auth");
 
-// Auth routes - protected (auth + timezone)
+// Auth routes - protected
 router
   .group(() => {
     router.post("/logout", [AuthController, "logout"]);
     router.get("/me", [AuthController, "me"]);
   })
   .prefix("/api/auth")
-  .use([middleware.auth(), middleware.timezone()]);
+  .use(middleware.auth());
 
 // User mode management (protected)
 router
@@ -46,7 +46,7 @@ router
     router.patch("/mode", [ModeController, "update"]);
   })
   .prefix("/api/users")
-  .use([middleware.auth(), middleware.timezone()]);
+  .use(middleware.auth());
 
 // Rehab programs (protected)
 router
@@ -56,7 +56,7 @@ router
     router.patch("/:id/status", [ProgramsController, "updateStatus"]);
   })
   .prefix("/api/rehab-programs")
-  .use([middleware.auth(), middleware.timezone()]);
+  .use(middleware.auth());
 
 // Rehab logs (protected)
 router
@@ -65,7 +65,7 @@ router
     router.get("/", [RehabLogsController, "index"]);
   })
   .prefix("/api/rehab-logs")
-  .use([middleware.auth(), middleware.timezone()]);
+  .use(middleware.auth());
 
 // Wellness logs (protected)
 router
@@ -74,7 +74,7 @@ router
     router.get("/", [WellnessLogsController, "index"]);
   })
   .prefix("/api/wellness-logs")
-  .use([middleware.auth(), middleware.timezone()]);
+  .use(middleware.auth());
 
 // AI sessions (protected)
 router
@@ -82,4 +82,4 @@ router
     router.post("/rehab-summary", [RehabSummaryController, "create"]);
   })
   .prefix("/api/sessions")
-  .use([middleware.auth(), middleware.timezone()]);
+  .use(middleware.auth());

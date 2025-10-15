@@ -1,14 +1,21 @@
 import { api } from "./client";
 import type { AuthResponse, LoginCredentials, RegisterCredentials, User } from "../types/auth";
+import * as Localization from "expo-localization";
 
 export const authApi = {
   register: async (credentials: RegisterCredentials): Promise<AuthResponse> => {
-    const { data } = await api.post<AuthResponse>("/api/auth/register", credentials);
+    const timezone = Localization.getCalendars()[0]?.timeZone || "UTC";
+    const { data } = await api.post<AuthResponse>("/api/auth/register", credentials, {
+      headers: { "X-Timezone": timezone },
+    });
     return data;
   },
 
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
-    const { data } = await api.post<AuthResponse>("/api/auth/login", credentials);
+    const timezone = Localization.getCalendars()[0]?.timeZone || "UTC";
+    const { data } = await api.post<AuthResponse>("/api/auth/login", credentials, {
+      headers: { "X-Timezone": timezone },
+    });
     return data;
   },
 

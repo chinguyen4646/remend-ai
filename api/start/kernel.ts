@@ -44,5 +44,4 @@ router.use([
  */
 export const middleware = router.named({
   auth: () => import("#middleware/auth_middleware"),
-  timezone: () => import("#middleware/timezone_middleware"),
 });

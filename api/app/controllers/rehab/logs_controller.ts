@@ -10,13 +10,7 @@ export default class LogsController {
   async create({ auth, request, response }: HttpContext) {
     const user = auth.user!;
     const data = await request.validateUsing(createRehabLogValidator);
-    const tz = (request as any).requestTz as string;
-
-    if (!tz) {
-      return response.badRequest({
-        errors: [{ message: "Timezone required via X-Timezone header" }],
-      });
-    }
+    const tz = user.tz;
 
     // Verify program exists and belongs to user
     const program = await RehabProgram.find(data.programId);
@@ -80,7 +74,7 @@ export default class LogsController {
   async index({ auth, request, response }: HttpContext) {
     const user = auth.user!;
     const params = await request.validateUsing(getRehabLogsValidator);
-    const tz = (request as any).requestTz as string;
+    const tz = user.tz;
 
     let programId: number | null = null;
 

@@ -9,7 +9,7 @@ export default class ProgramsController {
   async create({ auth, request, response }: HttpContext) {
     const user = auth.user!;
     const data = await request.validateUsing(createProgramValidator);
-    const tz = (request as any).requestTz as string;
+    const tz = user.tz;
 
     // Validate and transform startDate
     let startDate;

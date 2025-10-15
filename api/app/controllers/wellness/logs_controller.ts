@@ -9,7 +9,7 @@ export default class LogsController {
   async create({ auth, request, response }: HttpContext) {
     const user = auth.user!;
     const data = await request.validateUsing(createWellnessLogValidator);
-    const tz = (request as any).requestTz as string; // Guaranteed by timezone middleware
+    const tz = user.tz;
 
     // Validate and get date string
     let logDate: string;
@@ -54,7 +54,7 @@ export default class LogsController {
   async index({ auth, request, response }: HttpContext) {
     const user = auth.user!;
     const params = await request.validateUsing(getWellnessLogsValidator);
-    const tz = (request as any).requestTz as string;
+    const tz = user.tz;
 
     const query = WellnessLog.query().where("user_id", user.id).where("mode", params.mode);
 
