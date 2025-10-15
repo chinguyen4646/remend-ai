@@ -2,6 +2,7 @@ import { useState } from "react";
 import { View, ScrollView } from "react-native";
 import { Modal, Portal, Text, Card, Button } from "react-native-paper";
 import { useRouter } from "expo-router";
+import { features } from "../config/features";
 import { useAuthStore } from "../stores/authStore";
 
 interface ModeSwitchModalProps {
@@ -90,44 +91,46 @@ export default function ModeSwitchModal({ visible, onDismiss, currentMode }: Mod
 
             {/* Mode Cards */}
             <View className="gap-3 mb-4">
-              {MODES.map((mode) => {
-                const isCurrent = mode.value === currentMode;
-                const isSelected = mode.value === selectedMode;
+              {MODES.filter((mode) => features.generalModeEnabled || mode.value !== "general").map(
+                (mode) => {
+                  const isCurrent = mode.value === currentMode;
+                  const isSelected = mode.value === selectedMode;
 
-                return (
-                  <Card
-                    key={mode.value}
-                    mode={isCurrent ? "elevated" : "outlined"}
-                    className={isCurrent ? "bg-indigo-50" : ""}
-                    onPress={() => !isLoading && handleModeSelect(mode.value)}
-                  >
-                    <Card.Content className="py-4">
-                      <Text variant="titleLarge" className="mb-2">
-                        {mode.icon} {mode.title}
-                        {isCurrent && " (Current)"}
-                      </Text>
-                      <Text variant="bodyMedium" className="text-gray-600 mb-3">
-                        {mode.description}
-                      </Text>
+                  return (
+                    <Card
+                      key={mode.value}
+                      mode={isCurrent ? "elevated" : "outlined"}
+                      className={isCurrent ? "bg-indigo-50" : ""}
+                      onPress={() => !isLoading && handleModeSelect(mode.value)}
+                    >
+                      <Card.Content className="py-4">
+                        <Text variant="titleLarge" className="mb-2">
+                          {mode.icon} {mode.title}
+                          {isCurrent && " (Current)"}
+                        </Text>
+                        <Text variant="bodyMedium" className="text-gray-600 mb-3">
+                          {mode.description}
+                        </Text>
 
-                      {isCurrent ? (
-                        <Button mode="outlined" disabled>
-                          <Text>Current Mode</Text>
-                        </Button>
-                      ) : (
-                        <Button
-                          mode="contained"
-                          onPress={() => handleModeSelect(mode.value)}
-                          loading={isLoading && isSelected}
-                          disabled={isLoading}
-                        >
-                          <Text>Switch to {mode.title.replace(" Mode", "")}</Text>
-                        </Button>
-                      )}
-                    </Card.Content>
-                  </Card>
-                );
-              })}
+                        {isCurrent ? (
+                          <Button mode="outlined" disabled>
+                            <Text>Current Mode</Text>
+                          </Button>
+                        ) : (
+                          <Button
+                            mode="contained"
+                            onPress={() => handleModeSelect(mode.value)}
+                            loading={isLoading && isSelected}
+                            disabled={isLoading}
+                          >
+                            <Text>Switch to {mode.title.replace(" Mode", "")}</Text>
+                          </Button>
+                        )}
+                      </Card.Content>
+                    </Card>
+                  );
+                },
+              )}
             </View>
 
             {/* Warning Banner */}

@@ -4,6 +4,7 @@ import { Text, Card, ActivityIndicator } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { useAuthStore } from "../../src/stores/authStore";
 import BaseLayout from "../../src/components/BaseLayout";
+import { features } from "../../src/config/features";
 
 export default function ModePickerScreen() {
   const { updateMode, isLoading, error, clearError } = useAuthStore();
@@ -72,20 +73,22 @@ export default function ModePickerScreen() {
           </Card.Content>
         </Card>
 
-        <Card
-          mode="outlined"
-          className="border-2"
-          onPress={() => !isLoading && handleModeSelect("general")}
-        >
-          <Card.Content className="py-4">
-            <Text variant="headlineSmall" className="mb-2">
-              😊 Just check in
-            </Text>
-            <Text variant="bodyMedium" className="text-gray-600">
-              General fitness and wellness tracking
-            </Text>
-          </Card.Content>
-        </Card>
+        {features.generalModeEnabled && (
+          <Card
+            mode="outlined"
+            className="border-2"
+            onPress={() => !isLoading && handleModeSelect("general")}
+          >
+            <Card.Content className="py-4">
+              <Text variant="headlineSmall" className="mb-2">
+                😊 Just check in
+              </Text>
+              <Text variant="bodyMedium" className="text-gray-600">
+                General fitness and wellness tracking
+              </Text>
+            </Card.Content>
+          </Card>
+        )}
       </View>
 
       {isLoading && selectedMode && (

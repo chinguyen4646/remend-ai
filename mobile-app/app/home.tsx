@@ -3,6 +3,7 @@ import { View } from "react-native";
 import { ActivityIndicator } from "react-native-paper";
 import { useRouter, Redirect } from "expo-router";
 import { useAuthStore } from "../src/stores/authStore";
+import { features } from "../src/config/features";
 
 /**
  * Home route that redirects to the appropriate home screen based on user mode
@@ -40,7 +41,14 @@ export default function Home() {
     return <Redirect href="/rehab-home" />;
   } else if (user.mode === "maintenance") {
     return <Redirect href="/maintenance-home" />;
-  } else {
+  } else if (user.mode === "general") {
+    // If general mode is disabled, redirect to mode picker to choose rehab/maintenance
+    if (!features.generalModeEnabled) {
+      return <Redirect href="/(onboarding)/mode-picker" />;
+    }
     return <Redirect href="/general-home" />;
   }
+
+  // Fallback - should not reach here
+  return <Redirect href="/(onboarding)/mode-picker" />;
 }
