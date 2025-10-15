@@ -3,7 +3,9 @@
   "compilerOptions": {
     "strict": true,
     "jsx": "react-jsx",
-    "types": ["nativewind/types"]
+    "types": ["nativewind/types"],
+    "skipLibCheck": true,
+    "lib": ["es2015"]
   },
   "include": ["**/*.ts", "**/*.tsx", "nativewind.d.ts"]
 }
