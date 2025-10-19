@@ -1,13 +1,14 @@
 import { DateTime } from "luxon";
 import hash from "@adonisjs/core/services/hash";
 import { compose } from "@adonisjs/core/helpers";
-import { BaseModel, column, hasMany } from "@adonisjs/lucid/orm";
+import { BaseModel, column, hasMany, belongsTo } from "@adonisjs/lucid/orm";
 import { withAuthFinder } from "@adonisjs/auth/mixins/lucid";
 import { DbAccessTokensProvider } from "@adonisjs/auth/access_tokens";
-import type { HasMany } from "@adonisjs/lucid/types/relations";
+import type { HasMany, BelongsTo } from "@adonisjs/lucid/types/relations";
 import RehabProgram from "#models/rehab_program";
 import RehabLog from "#models/rehab_log";
 import WellnessLog from "#models/wellness_log";
+import UserOnboardingProfile from "#models/user_onboarding_profile";
 
 const AuthFinder = withAuthFinder(() => hash.use("scrypt"), {
   uids: ["email"],
@@ -39,6 +40,9 @@ export default class User extends compose(BaseModel, AuthFinder) {
   @column()
   declare tz: string;
 
+  @column()
+  declare currentProfileId: number | null;
+
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime;
 
@@ -53,6 +57,14 @@ export default class User extends compose(BaseModel, AuthFinder) {
 
   @hasMany(() => WellnessLog)
   declare wellnessLogs: HasMany<typeof WellnessLog>;
+
+  @hasMany(() => UserOnboardingProfile)
+  declare onboardingProfiles: HasMany<typeof UserOnboardingProfile>;
+
+  @belongsTo(() => UserOnboardingProfile, {
+    foreignKey: "currentProfileId",
+  })
+  declare currentProfile: BelongsTo<typeof UserOnboardingProfile>;
 
   static accessTokens = DbAccessTokensProvider.forModel(User);
 }

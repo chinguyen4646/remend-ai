@@ -39,6 +39,27 @@ export default class ProgramsController {
       }
     }
 
+    // Snapshot onboarding profile if available
+    let metadata = null;
+    if (user.currentProfileId) {
+      await user.load("currentProfile");
+      if (user.currentProfile) {
+        const profile = user.currentProfile;
+        metadata = {
+          area: profile.data.area,
+          goal: profile.data.goal,
+          riskLevel: profile.riskLevel,
+          aggravators: profile.data.aggravators,
+          easers: profile.data.easers,
+          onset: profile.data.onset,
+          painRest: profile.data.painRest,
+          painActivity: profile.data.painActivity,
+          onboardingVersion: profile.onboardingVersion,
+          profileId: profile.id,
+        };
+      }
+    }
+
     const program = await RehabProgram.create({
       userId: user.id,
       area: data.area,
@@ -46,9 +67,13 @@ export default class ProgramsController {
       side: data.side,
       startDate,
       status,
+      metadata,
     });
 
-    logger.info({ userId: user.id, programId: program.id }, "Rehab program created");
+    logger.info(
+      { userId: user.id, programId: program.id, hasProfile: !!metadata },
+      "Rehab program created",
+    );
 
     return response.created({ program });
   }

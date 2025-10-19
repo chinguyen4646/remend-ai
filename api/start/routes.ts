@@ -12,6 +12,7 @@ import { middleware } from "#start/kernel";
 
 const AuthController = () => import("#controllers/auth_controller");
 const ModeController = () => import("#controllers/users/mode_controller");
+const OnboardingController = () => import("#controllers/onboarding_controller");
 const ProgramsController = () => import("#controllers/rehab/programs_controller");
 const RehabLogsController = () => import("#controllers/rehab/logs_controller");
 const WellnessLogsController = () => import("#controllers/wellness/logs_controller");
@@ -46,6 +47,15 @@ router
     router.patch("/mode", [ModeController, "update"]);
   })
   .prefix("/api/users")
+  .use(middleware.auth());
+
+// Onboarding (protected)
+router
+  .group(() => {
+    router.post("/submit", [OnboardingController, "submit"]);
+    router.get("/profile", [OnboardingController, "getProfile"]);
+  })
+  .prefix("/api/onboarding")
   .use(middleware.auth());
 
 // Rehab programs (protected)

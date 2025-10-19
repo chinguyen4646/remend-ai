@@ -15,6 +15,7 @@ interface AuthState {
   register: (credentials: RegisterCredentials) => Promise<void>;
   logout: () => Promise<void>;
   loadUser: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   updateMode: (mode: "rehab" | "maintenance" | "general", injuryType?: string) => Promise<void>;
   clearError: () => void;
 }
@@ -124,6 +125,17 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
     } catch (error) {
       set({ isLoading: false });
+    }
+  },
+
+  refreshUser: async () => {
+    try {
+      const response = await authApi.me();
+      await AsyncStorage.setItem("user", JSON.stringify(response.user));
+      set({ user: response.user });
+    } catch (error) {
+      // Silently fail - user is still authenticated
+      console.error("Failed to refresh user:", error);
     }
   },
 

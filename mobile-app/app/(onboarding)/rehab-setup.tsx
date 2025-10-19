@@ -3,53 +3,65 @@ import { View } from "react-native";
 import { Text, Button, TextInput, Snackbar } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { useRehabProgramStore } from "../../src/stores/rehabProgramStore";
+import { useOnboardingStore } from "../../src/stores/onboardingStore";
 import BaseLayout from "../../src/components/BaseLayout";
 import { todayLocal } from "../../src/utils/dates";
+import type { Area } from "../../src/types/onboarding";
 
-const BODY_AREAS = [
-  { value: "knee", label: "Knee" },
-  { value: "shoulder", label: "Shoulder" },
-  { value: "ankle", label: "Ankle" },
-  { value: "hip", label: "Hip" },
-  { value: "back_lower", label: "Lower Back" },
-  { value: "back_upper", label: "Upper Back" },
-  { value: "neck", label: "Neck" },
-  { value: "elbow", label: "Elbow" },
-  { value: "wrist", label: "Wrist" },
-  { value: "hand", label: "Hand" },
-  { value: "foot", label: "Foot" },
-  { value: "achilles", label: "Achilles" },
-  { value: "hamstring", label: "Hamstring" },
-  { value: "quad", label: "Quad" },
-  { value: "calf", label: "Calf" },
-  { value: "groin", label: "Groin" },
-  { value: "rotator_cuff", label: "Rotator Cuff" },
-  { value: "acl", label: "ACL" },
-  { value: "meniscus", label: "Meniscus" },
-];
+/**
+ * Maps onboarding area to rehab program area
+ * Onboarding uses simplified areas, programs use specific areas
+ */
+function mapOnboardingAreaToProgram(onboardingArea: Area): string {
+  const mapping: Record<Area, string> = {
+    knee: "knee",
+    shoulder: "shoulder",
+    back: "lower_back", // Default to lower back (most common)
+    hip: "hip",
+    ankle: "ankle",
+    wrist: "wrist",
+    elbow: "elbow",
+    other: "other",
+  };
+  return mapping[onboardingArea];
+}
 
 export default function RehabSetupScreen() {
   const { createProgram, isLoading, error, clearError } = useRehabProgramStore();
-  const [area, setArea] = useState("");
+  const { data, reset } = useOnboardingStore();
   const [side, setSide] = useState<"left" | "right" | "both" | "na" | null>(null);
   const [startDate] = useState(todayLocal());
-  const [showAreaDropdown, setShowAreaDropdown] = useState(false);
   const router = useRouter();
 
+  // Get area and areaOtherLabel from onboarding data
+  const programArea = data.area ? mapOnboardingAreaToProgram(data.area) : "";
+  const areaOtherLabel = data.areaOtherLabel ? data.areaOtherLabel : null;
+
   const handleCreate = async () => {
-    if (!area || !side) {
+    if (!programArea) {
+      console.error("Missing area from onboarding data:", { data });
+      // Navigate back to onboarding if data is missing
+      router.replace("/(onboarding)/baseline");
+      return;
+    }
+
+    if (!side) {
       return;
     }
 
     try {
       await createProgram({
-        area,
+        area: programArea,
+        areaOtherLabel,
         side,
         startDate,
       });
+      // Clear onboarding data after successful program creation
+      reset();
       router.replace("/home");
-    } catch {
-      // Error handled by store
+    } catch (error) {
+      // Error handled by store, but log for debugging
+      console.error("Failed to create program:", error);
     }
   };
 
@@ -61,60 +73,14 @@ export default function RehabSetupScreen() {
     <BaseLayout keyboardAvoiding className="bg-white">
       <View className="mb-6 mt-4">
         <Text variant="headlineMedium" className="font-bold mb-2">
-          Set your rehab focus
+          Just one more thing
         </Text>
         <Text variant="bodyLarge" className="text-gray-600">
-          Takes 20 seconds · You can change this later
+          Your {data.area || "injury"} - which side?
         </Text>
       </View>
 
       <View className="gap-4">
-        {/* Area Selection */}
-        <View>
-          <Text variant="labelLarge" className="mb-2">
-            What area are you recovering?
-          </Text>
-          <View className="flex-row flex-wrap gap-2">
-            {BODY_AREAS.slice(0, 6).map((item) => (
-              <Button
-                key={item.value}
-                mode={area === item.value ? "contained" : "outlined"}
-                onPress={() => setArea(item.value)}
-                disabled={isLoading}
-                compact
-              >
-                {item.label}
-              </Button>
-            ))}
-            <Button
-              mode={showAreaDropdown ? "contained" : "outlined"}
-              onPress={() => setShowAreaDropdown(!showAreaDropdown)}
-              disabled={isLoading}
-              compact
-            >
-              <Text>More...</Text>
-            </Button>
-          </View>
-          {showAreaDropdown && (
-            <View className="flex-row flex-wrap gap-2 mt-2">
-              {BODY_AREAS.slice(6).map((item) => (
-                <Button
-                  key={item.value}
-                  mode={area === item.value ? "contained" : "outlined"}
-                  onPress={() => {
-                    setArea(item.value);
-                    setShowAreaDropdown(false);
-                  }}
-                  disabled={isLoading}
-                  compact
-                >
-                  {item.label}
-                </Button>
-              ))}
-            </View>
-          )}
-        </View>
-
         {/* Side Selection */}
         <View>
           <Text variant="labelLarge" className="mb-2">
@@ -174,7 +140,7 @@ export default function RehabSetupScreen() {
           mode="contained"
           onPress={handleCreate}
           loading={isLoading}
-          disabled={isLoading || !area || !side}
+          disabled={isLoading || !side}
         >
           <Text>Start Rehab</Text>
         </Button>

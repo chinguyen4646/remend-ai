@@ -12,6 +12,7 @@ export interface RehabProgram {
 
 export interface CreateProgramData {
   area: string;
+  areaOtherLabel?: string;
   side: "left" | "right" | "both" | "na";
   startDate?: string; // YYYY-MM-DD, defaults to today
 }

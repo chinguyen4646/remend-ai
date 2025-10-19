@@ -31,9 +31,9 @@ export default function Home() {
     return <Redirect href="/(auth)/login" />;
   }
 
-  // If no mode selected, go to mode picker
+  // If no mode selected, go to onboarding flow
   if (!user?.mode) {
-    return <Redirect href="/(onboarding)/mode-picker" />;
+    return <Redirect href="/(onboarding)/baseline" />;
   }
 
   // Redirect to appropriate home screen based on mode
@@ -42,13 +42,13 @@ export default function Home() {
   } else if (user.mode === "maintenance") {
     return <Redirect href="/maintenance-home" />;
   } else if (user.mode === "general") {
-    // If general mode is disabled, redirect to mode picker to choose rehab/maintenance
+    // If general mode is disabled, redirect to onboarding flow to choose rehab/maintenance
     if (!features.generalModeEnabled) {
-      return <Redirect href="/(onboarding)/mode-picker" />;
+      return <Redirect href="/(onboarding)/baseline" />;
     }
     return <Redirect href="/general-home" />;
   }
 
   // Fallback - should not reach here
-  return <Redirect href="/(onboarding)/mode-picker" />;
+  return <Redirect href="/(onboarding)/baseline" />;
 }

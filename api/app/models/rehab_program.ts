@@ -47,6 +47,29 @@ export default class RehabProgram extends BaseModel {
   @column()
   declare status: "active" | "completed" | "paused";
 
+  @column({
+    prepare: (value: Record<string, any> | null) => (value ? JSON.stringify(value) : null),
+    consume: (value: unknown): Record<string, any> | null => {
+      if (!value) return null;
+
+      if (typeof value === "string") {
+        try {
+          return JSON.parse(value) as Record<string, any>;
+        } catch (err) {
+          console.error("Failed to parse metadata JSON:", err);
+          return null;
+        }
+      }
+
+      if (typeof value === "object") {
+        return value as Record<string, any>;
+      }
+
+      return null;
+    },
+  })
+  declare metadata: Record<string, any> | null;
+
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime;
 
