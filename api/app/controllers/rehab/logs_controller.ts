@@ -51,7 +51,7 @@ export default class LogsController {
         stiffness: data.stiffness,
         swelling: data.swelling || null,
         activityLevel: data.activityLevel || null,
-        notes: data.notes || null,
+        notes: data.notes,
       });
 
       logger.info(

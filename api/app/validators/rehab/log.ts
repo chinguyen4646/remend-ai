@@ -8,7 +8,7 @@ export const createRehabLogValidator = vine.compile(
     stiffness: vine.number().min(0).max(10),
     swelling: vine.number().min(0).max(10).optional(),
     activityLevel: vine.enum(["rest", "light", "moderate", "heavy"]).optional(),
-    notes: vine.string().optional(),
+    notes: vine.string().trim().minLength(10).maxLength(1000),
   }),
 );
 
