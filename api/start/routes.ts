@@ -15,6 +15,7 @@ const ModeController = () => import("#controllers/users/mode_controller");
 const OnboardingController = () => import("#controllers/onboarding_controller");
 const ProgramsController = () => import("#controllers/rehab/programs_controller");
 const RehabLogsController = () => import("#controllers/rehab/logs_controller");
+const PlansController = () => import("#controllers/rehab/plans_controller");
 const WellnessLogsController = () => import("#controllers/wellness/logs_controller");
 const RehabSummaryController = () => import("#controllers/sessions/rehab_summary_controller");
 
@@ -75,6 +76,14 @@ router
     router.get("/", [RehabLogsController, "index"]);
   })
   .prefix("/api/rehab-logs")
+  .use(middleware.auth());
+
+// Rehab plans (protected)
+router
+  .group(() => {
+    router.get("/:id", [PlansController, "show"]);
+  })
+  .prefix("/api/rehab-plans")
   .use(middleware.auth());
 
 // Wellness logs (protected)

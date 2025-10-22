@@ -1,10 +1,13 @@
 import type { HttpContext } from "@adonisjs/core/http";
 import RehabLog from "#models/rehab_log";
 import RehabProgram from "#models/rehab_program";
+import RehabPlan from "#models/rehab_plan";
 import { createRehabLogValidator, getRehabLogsValidator } from "#validators/rehab/log";
 import { todayInTimezone, isValidIsoDate } from "#utils/dates";
 import logger from "@adonisjs/core/services/logger";
 import { DateTime } from "luxon";
+import ShortlistService from "#services/exercises/shortlist_service";
+import openaiProvider from "#services/ai/openai_provider";
 
 export default class LogsController {
   async create({ auth, request, response }: HttpContext) {
@@ -52,6 +55,7 @@ export default class LogsController {
         swelling: data.swelling || null,
         activityLevel: data.activityLevel || null,
         notes: data.notes,
+        aggravators: data.aggravators || [],
       });
 
       logger.info(
@@ -59,7 +63,10 @@ export default class LogsController {
         "Rehab log created",
       );
 
-      return response.created({ log });
+      // Generate exercise plan
+      const plan = await this.generatePlan(log, program);
+
+      return response.created({ log, plan });
     } catch (error) {
       // Handle unique constraint violation
       if (error.code === "23505") {
@@ -67,6 +74,77 @@ export default class LogsController {
           errors: [{ message: "A log already exists for this program and date" }],
         });
       }
+      throw error;
+    }
+  }
+
+  /**
+   * Generate exercise plan for a rehab log
+   */
+  private async generatePlan(log: RehabLog, program: RehabProgram): Promise<RehabPlan> {
+    const shortlistService = new ShortlistService();
+
+    try {
+      // Generate shortlist
+      const shortlist = await shortlistService.generateShortlist(log, program);
+
+      if (shortlist.length === 0) {
+        logger.warn({ logId: log.id }, "No exercises found for shortlist");
+        throw new Error("No exercises available");
+      }
+
+      // Build user context
+      const userContext = {
+        notes: log.notes || "",
+        aggravators: log.aggravators,
+        trend_summary: "First log entry", // TODO: Calculate actual trend
+      };
+
+      // Format with AI
+      let aiOutput = null;
+      let aiStatus: "success" | "failed" = "success";
+      let aiError: string | null = null;
+
+      try {
+        aiOutput = await openaiProvider.formatExercisePlan(shortlist, userContext);
+      } catch (error) {
+        logger.error({ logId: log.id, error: error.message }, "AI formatting failed");
+        aiStatus = "failed";
+        aiError = error.message;
+
+        // Generate fallback plan
+        aiOutput = {
+          summary:
+            userContext.trend_summary === "First log entry"
+              ? "Great job starting your rehab journey! Here's your plan for today."
+              : `Your pain trend: ${userContext.trend_summary}. Here's your personalized plan.`,
+          bullets: shortlist.map((ex) => ({
+            exercise_id: ex.id,
+            exercise_name: ex.name,
+            dosage_text: ex.dosage_text,
+            coaching: "Focus on proper form and listen to your body.",
+          })),
+          caution: undefined,
+        };
+      }
+
+      // Save plan
+      const plan = await RehabPlan.create({
+        rehabLogId: log.id,
+        planType: aiStatus === "success" ? "ai" : "fallback",
+        shortlistJson: { exercises: shortlist },
+        aiOutputJson: aiOutput,
+        aiStatus,
+        aiError,
+        userContextJson: userContext,
+        generatedAt: DateTime.now(),
+      });
+
+      logger.info({ logId: log.id, planId: plan.id, aiStatus }, "Exercise plan generated");
+
+      return plan;
+    } catch (error) {
+      logger.error({ logId: log.id, error: error.message }, "Plan generation failed");
       throw error;
     }
   }
