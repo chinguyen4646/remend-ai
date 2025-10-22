@@ -28,43 +28,12 @@ export default class Exercise extends BaseModel {
 
   @column()
   declare description: string | null;
-  @column({
-    prepare: (value: DosageJson | null | undefined) =>
-      value === null ? null : JSON.stringify(value),
-    consume: (value: unknown): DosageJson | null => {
-      if (value === null) return null;
-      if (typeof value === "object") return value as DosageJson;
-      if (typeof value === "string") {
-        try {
-          return JSON.parse(value) as DosageJson;
-        } catch (err) {
-          console.error("Failed to parse dosageLowJson:", err, { value });
-          return null;
-        }
-      }
-      return null;
-    },
-  })
-  declare dosageLowJson: DosageJson | null;
 
-  @column({
-    prepare: (value: DosageJson | null | undefined) =>
-      value === null ? null : JSON.stringify(value),
-    consume: (value: unknown): DosageJson | null => {
-      if (value === null) return null;
-      if (typeof value === "object") return value as DosageJson;
-      if (typeof value === "string") {
-        try {
-          return JSON.parse(value) as DosageJson;
-        } catch (err) {
-          console.error("Failed to parse dosageModJson:", err, { value });
-          return null;
-        }
-      }
-      return null;
-    },
-  })
-  declare dosageModJson: DosageJson | null;
+  @column()
+  declare dosageLowJson: DosageJson;
+
+  @column()
+  declare dosageModJson: DosageJson;
 
   @column()
   declare safetyNotes: string | null;

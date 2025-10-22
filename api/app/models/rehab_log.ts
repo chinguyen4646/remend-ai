@@ -40,24 +40,7 @@ export default class RehabLog extends BaseModel {
   @column()
   declare notes: string | null;
 
-  @column({
-    prepare: (value: string[] | null | undefined) =>
-      value === null ? JSON.stringify([]) : JSON.stringify(value),
-    consume: (value: unknown): string[] => {
-      if (value === null) return [];
-      if (Array.isArray(value)) return value as string[];
-      if (typeof value === "string") {
-        try {
-          const parsed = JSON.parse(value);
-          return Array.isArray(parsed) ? (parsed as string[]) : [];
-        } catch (err) {
-          console.error("Failed to parse aggravators:", err, { value });
-          return [];
-        }
-      }
-      return [];
-    },
-  })
+  @column()
   declare aggravators: string[];
 
   @column.dateTime({ autoCreate: true })

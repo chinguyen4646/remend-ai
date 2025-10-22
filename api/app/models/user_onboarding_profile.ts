@@ -29,25 +29,7 @@ export default class UserOnboardingProfile extends BaseModel {
   @column()
   declare userId: number;
 
-  @column({
-    prepare: (value: OnboardingData) => JSON.stringify(value),
-    consume: (value: unknown): OnboardingData => {
-      if (typeof value === "string") {
-        try {
-          return JSON.parse(value) as OnboardingData;
-        } catch (err) {
-          console.error("Failed to parse onboarding data JSON:", err);
-          return {} as OnboardingData;
-        }
-      }
-
-      if (value && typeof value === "object") {
-        return value as OnboardingData;
-      }
-
-      return {} as OnboardingData;
-    },
-  })
+  @column()
   declare data: OnboardingData;
 
   @column()
