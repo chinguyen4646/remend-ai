@@ -79,6 +79,8 @@ export default class RehabProgram extends BaseModel {
   @belongsTo(() => User)
   declare user: BelongsTo<typeof User>;
 
-  @hasMany(() => RehabLog)
+  @hasMany(() => RehabLog, {
+    foreignKey: "programId",
+  })
   declare rehabLogs: HasMany<typeof RehabLog>;
 }

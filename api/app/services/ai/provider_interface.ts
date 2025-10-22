@@ -1,4 +1,5 @@
 import type RehabLog from "#models/rehab_log";
+import type { DosageJson } from "#models/exercise";
 
 /**
  * AI Advice structure returned by providers
@@ -33,6 +34,46 @@ export interface AIAdvice {
 export type FeedbackMode = "early" | "full";
 
 /**
+ * Shortlist exercise from DB rules
+ */
+export interface ShortlistExercise {
+  id: number;
+  name: string;
+  bucket: string;
+  dosage_json: DosageJson;
+  dosage_text: string; // Pre-formatted for display
+  safety_notes?: string;
+}
+
+/**
+ * User context for plan transparency
+ */
+export interface UserContextJson {
+  notes: string;
+  aggravators: string[];
+  trend_summary: string;
+}
+
+/**
+ * AI-formatted plan bullet
+ */
+export interface AIPlanBullet {
+  exercise_id: number;
+  exercise_name: string;
+  dosage_text: string;
+  coaching: string;
+}
+
+/**
+ * AI output structure for exercise plans
+ */
+export interface AIOutputJson {
+  summary: string;
+  bullets: AIPlanBullet[];
+  caution?: string;
+}
+
+/**
  * Provider interface for AI services
  * Allows swapping OpenAI → Claude/Gemini/etc. later
  */
@@ -44,4 +85,15 @@ export interface AIProvider {
    * @returns Structured advice
    */
   getRehabAdvice(logs: RehabLog[], mode: FeedbackMode): Promise<AIAdvice>;
+
+  /**
+   * Format exercise plan with AI coaching
+   * @param shortlist - Deterministic shortlist from DB
+   * @param userContext - User notes/aggravators/trend for context
+   * @returns Formatted plan with coaching tips
+   */
+  formatExercisePlan(
+    shortlist: ShortlistExercise[],
+    userContext: UserContextJson,
+  ): Promise<AIOutputJson>;
 }

@@ -1,5 +1,12 @@
 import OpenAI from "openai";
-import type { AIProvider, AIAdvice, FeedbackMode } from "./provider_interface.js";
+import type {
+  AIProvider,
+  AIAdvice,
+  FeedbackMode,
+  ShortlistExercise,
+  UserContextJson,
+  AIOutputJson,
+} from "./provider_interface.js";
 import type RehabLog from "#models/rehab_log";
 import { buildEarlySnapshotPrompt, buildFullFeedbackPrompt } from "./prompt_builder.js";
 import aiConfig from "#config/ai";
@@ -79,6 +86,68 @@ export class OpenAIProvider implements AIProvider {
   }
 
   /**
+   * Format exercise plan with AI coaching
+   */
+  async formatExercisePlan(
+    shortlist: ShortlistExercise[],
+    userContext: UserContextJson,
+  ): Promise<AIOutputJson> {
+    try {
+      const startTime = Date.now();
+      const prompt = this.buildPlanPrompt(shortlist, userContext);
+
+      const completion = await this.client.chat.completions.create({
+        model: aiConfig.openai.model,
+        temperature: 0.5, // Slightly higher for empathy/variety
+        max_tokens: 800, // More tokens for coaching
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content: prompt,
+          },
+        ],
+      });
+
+      const duration = Date.now() - startTime;
+      const content = completion.choices[0]?.message?.content;
+
+      if (!content) {
+        logger.error("OpenAI returned empty response for plan formatting");
+        throw new Error("Empty response from AI");
+      }
+
+      // Parse and validate JSON response
+      const parsed = JSON.parse(content);
+      const aiOutput = this.validatePlanOutput(parsed, shortlist);
+
+      logger.info(
+        {
+          exerciseCount: shortlist.length,
+          duration,
+          tokens: completion.usage?.total_tokens,
+        },
+        "Plan formatted successfully with AI",
+      );
+
+      return aiOutput;
+    } catch (error) {
+      logger.error({ error: error.message }, "Failed to format plan with AI");
+
+      if (error instanceof OpenAI.APIError) {
+        if (error.status === 429) {
+          throw new Error("AI service rate limit exceeded. Please try again in a moment.");
+        }
+        if (error.status === 401) {
+          throw new Error("AI service authentication failed. Please contact support.");
+        }
+      }
+
+      throw new Error("Unable to format plan. Please try again later.");
+    }
+  }
+
+  /**
    * Validate and sanitize AI response
    * Ensures response matches expected schema and constraints
    */
@@ -119,6 +188,111 @@ export class OpenAIProvider implements AIProvider {
     return {
       summary: summary.trim(),
       actions: actions.map((a: any) => String(a).trim()).filter(Boolean),
+      caution: validatedCaution,
+    };
+  }
+
+  /**
+   * Build prompt for exercise plan formatting
+   */
+  private buildPlanPrompt(shortlist: ShortlistExercise[], userContext: UserContextJson): string {
+    const exerciseList = shortlist
+      .map(
+        (ex, idx) =>
+          `${idx + 1}. **${ex.name}** (ID: ${ex.id}) - ${ex.bucket}\n   - Dosage: ${ex.dosage_text}\n   - Safety: ${ex.safety_notes || "N/A"}`,
+      )
+      .join("\n");
+
+    return `You are a supportive physical therapy assistant. Your job is to format an exercise plan for a patient recovering from injury.
+
+**User Context:**
+- Recent notes: "${userContext.notes || "None"}"
+- Aggravators: ${userContext.aggravators.length > 0 ? userContext.aggravators.join(", ") : "None reported"}
+- Pain trend: ${userContext.trend_summary}
+
+**Shortlisted Exercises (pre-selected for safety):**
+${exerciseList}
+
+**Your Task:**
+Generate a JSON response with the following structure:
+
+{
+  "summary": "A 2-3 sentence empathetic summary that acknowledges the user's context and motivates them. Reference their notes or pain trend if relevant.",
+  "bullets": [
+    {
+      "exercise_id": 123,
+      "exercise_name": "Exercise Name",
+      "dosage_text": "Exact dosage from shortlist (do not modify)",
+      "coaching": "1-2 sentences of supportive coaching tips for this exercise"
+    }
+  ],
+  "caution": "Optional: Add a caution note if user's aggravators or pain level warrant extra care"
+}
+
+**CRITICAL Guidelines:**
+- Use the EXACT exercise_id values shown in the shortlist above (e.g., "ID: 123" means exercise_id should be 123)
+- Include ALL exercises from the shortlist in your bullets array
+- Summary must reference user context (notes, aggravators, or trend)
+- Coaching should be warm, encouraging, and specific to each exercise
+- Do NOT invent new exercises or modify dosages - use exact values from shortlist
+- Keep tone conversational but professional
+- Caution is optional - only add if truly needed based on context
+
+Return only valid JSON.`;
+  }
+
+  /**
+   * Validate and sanitize plan output from AI
+   */
+  private validatePlanOutput(parsed: any, shortlist: ShortlistExercise[]): AIOutputJson {
+    if (!parsed || typeof parsed !== "object") {
+      throw new Error("Invalid JSON structure from AI");
+    }
+
+    const { summary, bullets, caution } = parsed;
+
+    // Validate summary
+    if (!summary || typeof summary !== "string" || summary.trim().length === 0) {
+      throw new Error("Invalid or missing summary in AI response");
+    }
+
+    // Validate bullets
+    if (!Array.isArray(bullets) || bullets.length === 0) {
+      throw new Error("Invalid or missing bullets in AI response");
+    }
+
+    // Ensure bullets match shortlist (by exercise_id)
+    const validatedBullets = bullets
+      .map((bullet: any) => {
+        const matchingExercise = shortlist.find((ex) => ex.id === bullet.exercise_id);
+        if (!matchingExercise) {
+          logger.warn(
+            { bulletId: bullet.exercise_id },
+            "AI returned bullet for non-shortlisted exercise, skipping",
+          );
+          return null;
+        }
+
+        return {
+          exercise_id: matchingExercise.id,
+          exercise_name: matchingExercise.name,
+          dosage_text: matchingExercise.dosage_text, // Use original, not AI's
+          coaching: typeof bullet.coaching === "string" ? bullet.coaching.trim() : "",
+        };
+      })
+      .filter(Boolean);
+
+    if (validatedBullets.length === 0) {
+      throw new Error("No valid bullets after validation");
+    }
+
+    // Validate caution
+    const validatedCaution =
+      typeof caution === "string" && caution.trim().length > 0 ? caution.trim() : undefined;
+
+    return {
+      summary: summary.trim(),
+      bullets: validatedBullets as any,
       caution: validatedCaution,
     };
   }
