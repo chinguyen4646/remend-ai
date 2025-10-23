@@ -161,9 +161,23 @@ export default function RehabHomeScreen() {
                 <View className="gap-3">
                   {logs.map((log) => (
                     <View key={log.id} className="border-l-4 border-indigo-500 pl-3 py-2">
-                      <Text variant="labelLarge" className="font-bold mb-1">
-                        {formatCalendarDate(log.date)}
-                      </Text>
+                      <View className="flex-row justify-between items-start mb-1">
+                        <Text variant="labelLarge" className="font-bold">
+                          {formatCalendarDate(log.date)}
+                        </Text>
+                        {log.plan && (
+                          <Button
+                            mode="contained"
+                            onPress={() =>
+                              router.push(`/(rehab)/plan-created?planId=${log.plan?.id}`)
+                            }
+                            compact
+                            labelStyle={{ fontSize: 12 }}
+                          >
+                            <Text>View Plan →</Text>
+                          </Button>
+                        )}
+                      </View>
                       <View className="flex-row gap-4">
                         <Text variant="bodyMedium">Pain: {log.pain}</Text>
                         <Text variant="bodyMedium">Stiffness: {log.stiffness}</Text>

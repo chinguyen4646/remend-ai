@@ -1,3 +1,5 @@
+import type { RehabPlan } from "./rehabPlan";
+
 export interface RehabLog {
   id: number;
   userId: number;
@@ -9,6 +11,7 @@ export interface RehabLog {
   activityLevel: "rest" | "light" | "moderate" | "heavy" | null;
   notes: string; // Required: min 10, max 1000 chars
   aggravators: string[];
+  plan?: RehabPlan; // Optional: Associated exercise plan
   createdAt: string;
   updatedAt: string;
 }

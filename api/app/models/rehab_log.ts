@@ -1,8 +1,9 @@
 import { DateTime } from "luxon";
-import { BaseModel, column, belongsTo } from "@adonisjs/lucid/orm";
-import type { BelongsTo } from "@adonisjs/lucid/types/relations";
+import { BaseModel, column, belongsTo, hasOne } from "@adonisjs/lucid/orm";
+import type { BelongsTo, HasOne } from "@adonisjs/lucid/types/relations";
 import User from "#models/user";
 import RehabProgram from "#models/rehab_program";
+import RehabPlan from "#models/rehab_plan";
 
 export default class RehabLog extends BaseModel {
   @column({ isPrimary: true })
@@ -63,4 +64,9 @@ export default class RehabLog extends BaseModel {
     foreignKey: "programId",
   })
   declare program: BelongsTo<typeof RehabProgram>;
+
+  @hasOne(() => RehabPlan, {
+    foreignKey: "rehabLogId",
+  })
+  declare plan: HasOne<typeof RehabPlan>;
 }

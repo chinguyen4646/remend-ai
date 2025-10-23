@@ -196,7 +196,7 @@ export default class LogsController {
       query.where("date", ">=", start).andWhere("date", "<=", end);
     }
 
-    const logs = await query.orderBy("date", "desc").preload("program");
+    const logs = await query.orderBy("date", "desc").preload("program").preload("plan");
 
     return response.ok({ logs });
   }

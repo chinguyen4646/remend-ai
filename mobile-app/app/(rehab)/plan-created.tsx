@@ -24,7 +24,7 @@ export default function PlanCreatedScreen() {
       try {
         const response = await api.get<{ plan: RehabPlan }>(`/api/rehab-plans/${planId}`);
         setPlan(response.data.plan);
-      } catch (err: any) {
+      } catch (err: unknown) {
         setError(err.response?.data?.errors?.[0]?.message || "Failed to load plan");
       } finally {
         setIsLoading(false);
@@ -35,7 +35,7 @@ export default function PlanCreatedScreen() {
   }, [planId]);
 
   const handleGoHome = () => {
-    router.replace("/(tabs)/home");
+    router.replace("/rehab-home");
   };
 
   if (isLoading) {
@@ -71,7 +71,7 @@ export default function PlanCreatedScreen() {
         {/* Header */}
         <View className="mb-6">
           <Text variant="headlineMedium" className="font-bold mb-2">
-            Today's Plan
+            Today&apos;s Plan
           </Text>
           <Text variant="bodyLarge" className="text-gray-600">
             Your personalized exercise plan is ready
@@ -162,7 +162,7 @@ export default function PlanCreatedScreen() {
         {/* Action Button */}
         <View className="mb-4">
           <Button mode="contained" onPress={handleGoHome}>
-            <Text>Done</Text>
+            <Text>Back</Text>
           </Button>
         </View>
       </ScrollView>
