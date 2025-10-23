@@ -6,14 +6,12 @@ import { useRouter } from "expo-router";
 import Voice from "@react-native-voice/voice";
 import { useRehabProgramStore } from "../../src/stores/rehabProgramStore";
 import { useRehabLogStore } from "../../src/stores/rehabLogStore";
-import { useAIAdviceStore } from "../../src/stores/aiAdviceStore";
 import BaseLayout from "../../src/components/BaseLayout";
 
 export default function LogFormScreen() {
   const router = useRouter();
   const { activeProgram } = useRehabProgramStore();
   const { createLog, isLoading, error, clearError } = useRehabLogStore();
-  const { invalidateCache } = useAIAdviceStore();
 
   // Form state
   const [pain, setPain] = useState(0);
@@ -26,6 +24,7 @@ export default function LogFormScreen() {
   const [notesError, setNotesError] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [aggravators, setAggravators] = useState<string[]>([]);
 
   // Use ref to avoid re-registering event handlers
   const notesBeforeRecordingRef = useRef("");
@@ -116,20 +115,23 @@ export default function LogFormScreen() {
     if (!validateNotes()) return;
 
     try {
-      await createLog({
+      const plan = await createLog({
         programId: activeProgram.id,
         pain,
         stiffness,
         swelling,
         activityLevel: activityLevel || undefined,
         notes: notes.trim(),
+        aggravators: aggravators.length > 0 ? aggravators : undefined,
       });
 
-      // Invalidate AI cache since we have a new log
-      await invalidateCache(activeProgram.id);
-
-      // Success! Go back to home
-      router.back();
+      // Navigate to plan-created screen if plan was generated
+      if (plan) {
+        router.replace(`/(rehab)/plan-created?planId=${plan.id}`);
+      } else {
+        // Fallback: go back to home
+        router.back();
+      }
     } catch (err) {
       // Error is handled by store and shown in Snackbar
     }
@@ -137,6 +139,12 @@ export default function LogFormScreen() {
 
   const handleCancel = () => {
     router.back();
+  };
+
+  const toggleAggravator = (aggravator: string) => {
+    setAggravators((prev) =>
+      prev.includes(aggravator) ? prev.filter((a) => a !== aggravator) : [...prev, aggravator],
+    );
   };
 
   if (!activeProgram) {
@@ -366,6 +374,31 @@ export default function LogFormScreen() {
               {notesError}
             </Text>
           )}
+        </View>
+
+        {/* Aggravators */}
+        <View className="mb-6">
+          <Text variant="titleMedium" className="mb-2">
+            What makes it worse? (Optional)
+          </Text>
+          <Text variant="bodySmall" className="text-gray-600 mb-3">
+            Tap activities that aggravate your symptoms
+          </Text>
+          <View className="flex-row gap-2 flex-wrap">
+            {["Stairs", "Squatting", "Running", "Jumping", "Kneeling", "Standing", "Walking"].map(
+              (item) => (
+                <Button
+                  key={item}
+                  mode={aggravators.includes(item.toLowerCase()) ? "contained" : "outlined"}
+                  onPress={() => toggleAggravator(item.toLowerCase())}
+                  disabled={isLoading}
+                  compact
+                >
+                  <Text>{item}</Text>
+                </Button>
+              ),
+            )}
+          </View>
         </View>
 
         {/* Action Buttons */}

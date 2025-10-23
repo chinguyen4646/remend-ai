@@ -1,27 +1,21 @@
 import { useEffect, useState } from "react";
 import { View, RefreshControl, ScrollView } from "react-native";
-import { Text, Button, Card, ActivityIndicator, Banner, Snackbar } from "react-native-paper";
+import { Text, Button, Card, ActivityIndicator, Banner } from "react-native-paper";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useCallback } from "react";
 import { useAuthStore } from "../src/stores/authStore";
 import { useRehabProgramStore } from "../src/stores/rehabProgramStore";
 import { useRehabLogStore } from "../src/stores/rehabLogStore";
-import { useAIAdviceStore } from "../src/stores/aiAdviceStore";
 import BaseLayout from "../src/components/BaseLayout";
 import Sparkline from "../src/components/Sparkline";
-import AIAdviceCard from "../src/components/AIAdviceCard";
-import AIAdviceErrorBoundary from "../src/components/AIAdviceErrorBoundary";
-import AIAdviceLoadingSkeleton from "../src/components/AIAdviceLoadingSkeleton";
 import { formatCalendarDate } from "../src/utils/dates";
 
 export default function RehabHomeScreen() {
   const { user } = useAuthStore();
   const { activeProgram, isLoading, loadActiveProgram } = useRehabProgramStore();
   const { logs, hasLoggedToday, loadLogs, isLoading: logsLoading } = useRehabLogStore();
-  const { currentAdvice, isLoading: aiLoading, error: aiError, fetchAdvice } = useAIAdviceStore();
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
-  const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
   useEffect(() => {
     loadActiveProgram();
@@ -49,20 +43,6 @@ export default function RehabHomeScreen() {
       await loadLogs(activeProgram.id);
     }
     setRefreshing(false);
-  };
-
-  const handleGetAIFeedback = async () => {
-    if (!activeProgram) return;
-
-    if (logs.length === 0) {
-      setInfoMessage("You need at least one log entry to get AI feedback.");
-      return;
-    }
-
-    // Get the most recent log date for cache validation
-    const mostRecentLogDate = logs[0].date;
-
-    await fetchAdvice(activeProgram.id, mostRecentLogDate);
   };
 
   if (isLoading) {
@@ -165,21 +145,9 @@ export default function RehabHomeScreen() {
           <>
             <Card className="mb-4">
               <Card.Content>
-                <View className="flex-row justify-between items-center mb-4">
-                  <Text variant="titleLarge" className="font-bold">
-                    Last 14 Days
-                  </Text>
-                  <Button
-                    mode="contained-tonal"
-                    onPress={handleGetAIFeedback}
-                    icon="lightbulb-outline"
-                    loading={aiLoading}
-                    disabled={aiLoading}
-                    compact
-                  >
-                    <Text>AI Feedback</Text>
-                  </Button>
-                </View>
+                <Text variant="titleLarge" className="font-bold mb-4">
+                  Last 14 Days
+                </Text>
 
                 {/* Sparkline */}
                 <View className="mb-4 items-center">
@@ -216,16 +184,6 @@ export default function RehabHomeScreen() {
                 </View>
               </Card.Content>
             </Card>
-
-            {/* AI Advice Loading Skeleton */}
-            {aiLoading && <AIAdviceLoadingSkeleton />}
-
-            {/* AI Advice Card */}
-            {!aiLoading && currentAdvice && (
-              <AIAdviceErrorBoundary>
-                <AIAdviceCard advice={currentAdvice} />
-              </AIAdviceErrorBoundary>
-            )}
           </>
         )}
         {activeProgram && logs.length === 0 && !logsLoading && (
@@ -244,24 +202,6 @@ export default function RehabHomeScreen() {
           <Text>Sign Out</Text>
         </Button>
       </ScrollView>
-
-      {/* Snackbar for errors and info messages */}
-      <Snackbar
-        visible={!!aiError || !!infoMessage}
-        onDismiss={() => setInfoMessage(null)}
-        duration={6000}
-        action={{
-          label: aiError ? "Retry" : "Dismiss",
-          onPress: () => {
-            setInfoMessage(null);
-            if (aiError) {
-              handleGetAIFeedback();
-            }
-          },
-        }}
-      >
-        {aiError || infoMessage}
-      </Snackbar>
     </BaseLayout>
   );
 }

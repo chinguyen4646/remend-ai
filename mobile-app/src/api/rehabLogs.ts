@@ -1,13 +1,15 @@
 import { api } from "./client";
 import type { RehabLog, CreateRehabLogData, GetRehabLogsParams } from "../types/rehabLog";
+import type { RehabPlan } from "../types/rehabPlan";
 
 export const rehabLogsApi = {
   /**
    * Create a new rehab log entry
    * Date defaults to today in user's timezone on the server
+   * Returns both the log and the generated exercise plan
    */
-  createLog: async (data: CreateRehabLogData): Promise<{ log: RehabLog }> => {
-    const response = await api.post<{ log: RehabLog }>("/api/rehab-logs", data);
+  createLog: async (data: CreateRehabLogData): Promise<{ log: RehabLog; plan: RehabPlan }> => {
+    const response = await api.post<{ log: RehabLog; plan: RehabPlan }>("/api/rehab-logs", data);
     return response.data;
   },
 

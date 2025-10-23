@@ -8,6 +8,7 @@ export interface RehabLog {
   swelling: number; // 0-10
   activityLevel: "rest" | "light" | "moderate" | "heavy" | null;
   notes: string; // Required: min 10, max 1000 chars
+  aggravators: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -19,6 +20,7 @@ export interface CreateRehabLogData {
   swelling: number;
   activityLevel?: "rest" | "light" | "moderate" | "heavy";
   notes: string; // Required: min 10, max 1000 chars
+  aggravators?: string[];
 }
 
 export interface GetRehabLogsParams {

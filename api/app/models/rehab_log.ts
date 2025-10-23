@@ -40,7 +40,14 @@ export default class RehabLog extends BaseModel {
   @column()
   declare notes: string | null;
 
-  @column()
+  @column({
+    prepare: (value: string[]) => JSON.stringify(value),
+    consume: (value: string | string[]) => {
+      if (typeof value === "string") return JSON.parse(value);
+      return value;
+    },
+    serialize: (value: string[]) => value,
+  })
   declare aggravators: string[];
 
   @column.dateTime({ autoCreate: true })

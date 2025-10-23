@@ -1,23 +1,26 @@
 import { create } from "zustand";
 import { rehabLogsApi } from "../api/rehabLogs";
 import type { RehabLog, CreateRehabLogData } from "../types/rehabLog";
+import type { RehabPlan } from "../types/rehabPlan";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { todayLocal } from "../utils/dates";
 
 interface RehabLogState {
   logs: RehabLog[];
+  latestPlan: RehabPlan | null;
   isLoading: boolean;
   error: string | null;
   hasLoggedToday: boolean;
 
   // Actions
   loadLogs: (programId?: string | number) => Promise<void>;
-  createLog: (data: CreateRehabLogData) => Promise<void>;
+  createLog: (data: CreateRehabLogData) => Promise<RehabPlan | undefined>;
   clearError: () => void;
 }
 
 export const useRehabLogStore = create<RehabLogState>((set, get) => ({
   logs: [],
+  latestPlan: null,
   isLoading: false,
   error: null,
   hasLoggedToday: false,
@@ -50,12 +53,18 @@ export const useRehabLogStore = create<RehabLogState>((set, get) => ({
   createLog: async (data: CreateRehabLogData) => {
     set({ isLoading: true, error: null });
     try {
-      await rehabLogsApi.createLog(data);
+      const { plan } = await rehabLogsApi.createLog(data);
+
+      // Save plan to state
+      set({ latestPlan: plan });
 
       // Optimistically refresh logs after successful creation
       await get().loadLogs(data.programId);
 
       set({ isLoading: false });
+
+      // Return plan so UI can navigate to plan screen
+      return plan;
     } catch (err: any) {
       const status = err.response?.status;
       let errorMessage = "Failed to create log";
