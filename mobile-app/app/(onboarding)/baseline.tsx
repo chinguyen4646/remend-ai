@@ -4,14 +4,12 @@ import { Text, Button, Chip, TextInput } from "react-native-paper";
 import Slider from "@react-native-community/slider";
 import { useRouter } from "expo-router";
 import { useOnboardingStore } from "../../src/stores/onboardingStore";
-import { useAuthStore } from "../../src/stores/authStore";
 import BaseLayout from "../../src/components/BaseLayout";
 import type { Area, Onset, Timing, ActivityLevel } from "../../src/types/onboarding";
 
 export default function BaselineScreen() {
   const router = useRouter();
   const { setBaselineData } = useOnboardingStore();
-  const { updateMode } = useAuthStore();
 
   // Form state
   const [area, setArea] = useState<Area | null>(null);
@@ -24,7 +22,6 @@ export default function BaselineScreen() {
   const [aggravators, setAggravators] = useState("");
   const [easers, setEasers] = useState("");
   const [activityLevel, setActivityLevel] = useState<ActivityLevel | null>(null);
-  const [isSkipping, setIsSkipping] = useState(false);
 
   const handleContinue = () => {
     // Validate required fields
@@ -56,18 +53,6 @@ export default function BaselineScreen() {
     router.push("/(onboarding)/goal");
   };
 
-  const handleSkip = async () => {
-    try {
-      setIsSkipping(true);
-      // Default to maintenance mode when skipping onboarding
-      await updateMode("maintenance");
-      router.replace("/home");
-    } catch (error) {
-      setIsSkipping(false);
-      // Error handled by store
-    }
-  };
-
   const toggleTiming = (value: Timing) => {
     setTiming((prev) =>
       prev.includes(value) ? prev.filter((t) => t !== value) : [...prev, value],
@@ -78,15 +63,10 @@ export default function BaselineScreen() {
 
   return (
     <BaseLayout scrollable keyboardAvoiding>
-      <View className="flex-row justify-between items-center mb-6">
-        <View className="flex-1">
-          <Text variant="headlineMedium" className="font-bold">
-            Tell us about your body
-          </Text>
-        </View>
-        <Button mode="text" onPress={handleSkip} compact disabled={isSkipping} loading={isSkipping}>
-          <Text>Skip</Text>
-        </Button>
+      <View className="mb-6">
+        <Text variant="headlineMedium" className="font-bold">
+          Tell us about your body
+        </Text>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>

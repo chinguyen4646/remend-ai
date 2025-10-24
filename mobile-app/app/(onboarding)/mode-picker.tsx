@@ -58,20 +58,22 @@ export default function ModePickerScreen() {
           </Card.Content>
         </Card>
 
-        <Card
-          mode="outlined"
-          className="border-2"
-          onPress={() => !isLoading && handleModeSelect("maintenance")}
-        >
-          <Card.Content className="py-4">
-            <Text variant="headlineSmall" className="mb-2">
-              💪 Stay strong
-            </Text>
-            <Text variant="bodyMedium" className="text-gray-600">
-              Post-recovery wellness tracking to maintain your progress
-            </Text>
-          </Card.Content>
-        </Card>
+        {features.maintenanceModeEnabled && (
+          <Card
+            mode="outlined"
+            className="border-2"
+            onPress={() => !isLoading && handleModeSelect("maintenance")}
+          >
+            <Card.Content className="py-4">
+              <Text variant="headlineSmall" className="mb-2">
+                💪 Stay strong
+              </Text>
+              <Text variant="bodyMedium" className="text-gray-600">
+                Post-recovery wellness tracking to maintain your progress
+              </Text>
+            </Card.Content>
+          </Card>
+        )}
 
         {features.generalModeEnabled && (
           <Card

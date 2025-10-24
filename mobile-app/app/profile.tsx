@@ -6,7 +6,6 @@ import { authApi } from "../src/api/auth";
 import type { User } from "../src/types/auth";
 import { useAuthStore } from "../src/stores/authStore";
 import BaseLayout from "../src/components/BaseLayout";
-import ModeSwitchModal from "../src/components/ModeSwitchModal";
 import { rehabApi } from "../src/api/rehab";
 import type { RehabProgram } from "../src/types/rehab";
 
@@ -17,7 +16,6 @@ export default function ProfileScreen() {
   const [programsLoading, setProgramsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showModeSwitchModal, setShowModeSwitchModal] = useState(false);
   const router = useRouter();
 
   const fetchUser = async () => {
@@ -150,56 +148,6 @@ export default function ProfileScreen() {
           </Card.Content>
         </Card>
 
-        <Card className="mb-4">
-          <Card.Content>
-            <Text variant="titleLarge" className="font-bold mb-4">
-              Mode Settings
-            </Text>
-
-            <View className="gap-3">
-              <View>
-                <Text variant="labelMedium" className="text-gray-600 mb-1">
-                  Current Mode
-                </Text>
-                <Text variant="bodyLarge">
-                  {user?.mode ? user.mode.charAt(0).toUpperCase() + user.mode.slice(1) : "Not set"}
-                </Text>
-              </View>
-
-              {user?.mode === "rehab" && user?.injuryType && (
-                <View>
-                  <Text variant="labelMedium" className="text-gray-600 mb-1">
-                    Injury Type
-                  </Text>
-                  <Text variant="bodyLarge">{user.injuryType}</Text>
-                </View>
-              )}
-
-              {user?.modeStartedAt && (
-                <View>
-                  <Text variant="labelMedium" className="text-gray-600 mb-1">
-                    Mode Started
-                  </Text>
-                  <Text variant="bodyLarge">
-                    {new Date(user.modeStartedAt).toLocaleDateString()}
-                  </Text>
-                </View>
-              )}
-            </View>
-
-            {user?.mode && (
-              <View className="gap-2 mt-4">
-                <Button mode="contained" onPress={handleGoToHome} icon="home">
-                  <Text>Go to {user.mode.charAt(0).toUpperCase() + user.mode.slice(1)} Home</Text>
-                </Button>
-                <Button mode="outlined" onPress={() => setShowModeSwitchModal(true)}>
-                  <Text>Change Mode</Text>
-                </Button>
-              </View>
-            )}
-          </Card.Content>
-        </Card>
-
         {user?.mode === "rehab" && (
           <Card className="mb-4">
             <Card.Content>
@@ -280,16 +228,6 @@ export default function ProfileScreen() {
           <Text>Sign Out</Text>
         </Button>
       </ScrollView>
-
-      <ModeSwitchModal
-        visible={showModeSwitchModal}
-        onDismiss={() => {
-          setShowModeSwitchModal(false);
-          // Refresh user data after modal closes
-          fetchUser();
-        }}
-        currentMode={user?.mode || null}
-      />
     </BaseLayout>
   );
 }

@@ -4,7 +4,6 @@ import { ActivityIndicator, Text, Button } from "react-native-paper";
 import { useRouter, Redirect } from "expo-router";
 import { useAuthStore } from "../src/stores/authStore";
 import { useRehabProgramStore } from "../src/stores/rehabProgramStore";
-import { features } from "../src/config/features";
 
 /**
  * Home route that redirects to the appropriate home screen based on user mode
@@ -35,7 +34,8 @@ export default function Home() {
     }
   }, [user?.mode, programLoading, activeProgram, router]);
 
-  if (authLoading || (user?.mode === "rehab" && programLoading)) {
+  // Show loading while auth is loading OR while user is authenticated but user object not loaded yet
+  if (authLoading || (isAuthenticated && !user) || (user?.mode === "rehab" && programLoading)) {
     return (
       <View className="flex-1 justify-center items-center bg-white">
         <ActivityIndicator size="large" />
@@ -73,17 +73,20 @@ export default function Home() {
     );
   }
 
-  // Redirect to appropriate home screen based on mode
-  if (user.mode === "maintenance") {
-    return <Redirect href="/maintenance-home" />;
-  } else if (user.mode === "general") {
-    // If general mode is disabled, redirect to onboarding flow to choose rehab/maintenance
-    if (!features.generalModeEnabled) {
-      return <Redirect href="/(onboarding)/baseline" />;
-    }
-    return <Redirect href="/general-home" />;
+  // Only rehab mode is supported - redirect any other modes to onboarding
+  if (user.mode !== "rehab") {
+    return <Redirect href="/(onboarding)/baseline" />;
   }
 
-  // Fallback - should not reach here
+  // For rehab users with active program - show loading while useEffect redirects to rehab-home
+  if (user.mode === "rehab" && activeProgram) {
+    return (
+      <View className="flex-1 justify-center items-center bg-white">
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  // Fallback - should not reach here for valid rehab users
   return <Redirect href="/(onboarding)/baseline" />;
 }

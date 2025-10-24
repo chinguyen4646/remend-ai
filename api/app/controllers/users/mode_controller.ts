@@ -3,11 +3,27 @@ import { DateTime } from "luxon";
 import { updateModeValidator } from "#validators/users/mode";
 import RehabProgram from "#models/rehab_program";
 import logger from "@adonisjs/core/services/logger";
+import featuresConfig from "#config/features";
 
 export default class ModeController {
   async update({ auth, request, response }: HttpContext) {
     const user = auth.user!;
     const data = await request.validateUsing(updateModeValidator);
+
+    // Check if the requested mode is enabled via feature flags
+    if (data.mode === "maintenance" && !featuresConfig.maintenanceModeEnabled) {
+      logger.warn({ userId: user.id, mode: data.mode }, "Attempted to switch to disabled mode");
+      return response.badRequest({
+        errors: [{ message: "Maintenance mode is currently disabled" }],
+      });
+    }
+
+    if (data.mode === "general" && !featuresConfig.generalModeEnabled) {
+      logger.warn({ userId: user.id, mode: data.mode }, "Attempted to switch to disabled mode");
+      return response.badRequest({
+        errors: [{ message: "General mode is currently disabled" }],
+      });
+    }
 
     const previousMode = user.mode;
 

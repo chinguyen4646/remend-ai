@@ -46,4 +46,16 @@ export default await Env.create(new URL("../", import.meta.url), {
   */
   AI_ENABLED: Env.schema.boolean.optional(),
   OPENAI_API_KEY: Env.schema.string.optional(),
+
+  /*
+  |--------------------------------------------------------------------------
+  | Feature flags
+  |--------------------------------------------------------------------------
+  |
+  | These flags control which app modes are available to users.
+  | When disabled, modes are hidden from UI and mode switching is blocked.
+  |
+  */
+  ENABLE_MAINTENANCE_MODE: Env.schema.boolean.optional(),
+  ENABLE_GENERAL_MODE: Env.schema.boolean.optional(),
 });
