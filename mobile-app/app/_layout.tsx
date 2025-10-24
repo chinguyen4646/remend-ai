@@ -4,6 +4,7 @@ import { PaperProvider } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { useAuthStore } from "../src/stores/authStore";
+import BottomTabBar from "../src/components/BottomTabBar";
 
 /**
  * Root layout - provides global context and initializes auth
@@ -22,6 +23,7 @@ export default function RootLayout() {
       <PaperProvider>
         <StatusBar style="auto" />
         <Slot />
+        <BottomTabBar />
       </PaperProvider>
     </SafeAreaProvider>
   );

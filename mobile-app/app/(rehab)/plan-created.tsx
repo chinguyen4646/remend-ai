@@ -8,7 +8,7 @@ import BaseLayout from "../../src/components/BaseLayout";
 
 export default function PlanCreatedScreen() {
   const router = useRouter();
-  const { planId } = useLocalSearchParams<{ planId: string }>();
+  const { planId, programId } = useLocalSearchParams<{ planId: string; programId?: string }>();
   const [plan, setPlan] = useState<RehabPlan | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +35,11 @@ export default function PlanCreatedScreen() {
   }, [planId]);
 
   const handleGoHome = () => {
-    router.replace("/rehab-home");
+    if (programId) {
+      router.replace(`/rehab-home?programId=${programId}`);
+    } else {
+      router.replace("/home");
+    }
   };
 
   if (isLoading) {
@@ -162,7 +166,7 @@ export default function PlanCreatedScreen() {
         {/* Action Button */}
         <View className="mb-4">
           <Button mode="contained" onPress={handleGoHome}>
-            <Text>Back</Text>
+            <Text>Back!!</Text>
           </Button>
         </View>
       </ScrollView>

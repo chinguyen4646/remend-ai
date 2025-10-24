@@ -181,7 +181,9 @@ export default function RehabHomeScreen() {
                           <Button
                             mode="contained"
                             onPress={() =>
-                              router.push(`/(rehab)/plan-created?planId=${log.plan?.id}`)
+                              router.push(
+                                `/(rehab)/plan-created?planId=${log.plan?.id}&programId=${program.id}`,
+                              )
                             }
                             compact
                             labelStyle={{ fontSize: 12 }}

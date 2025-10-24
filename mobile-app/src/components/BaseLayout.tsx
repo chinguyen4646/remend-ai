@@ -2,7 +2,6 @@ import { ReactNode } from "react";
 import { ScrollView, View, ViewStyle, KeyboardAvoidingView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePathname } from "expo-router";
-import BottomTabBar from "./BottomTabBar";
 
 interface BaseLayoutProps {
   children: ReactNode;
@@ -96,7 +95,7 @@ export default function BaseLayout({
       style={[
         {
           paddingTop: insets.top,
-          paddingBottom: insets.bottom,
+          paddingBottom: showTabBar ? 0 : insets.bottom, // Don't add bottom padding when tab bar is visible
           paddingLeft: insets.left,
           paddingRight: insets.right,
         },
@@ -104,7 +103,6 @@ export default function BaseLayout({
       ]}
     >
       {wrappedContent}
-      <BottomTabBar />
     </View>
   );
 }

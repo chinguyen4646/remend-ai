@@ -126,8 +126,8 @@ export default function LogFormScreen() {
       });
 
       // Navigate to plan-created screen if plan was generated
-      if (plan) {
-        router.replace(`/(rehab)/plan-created?planId=${plan.id}`);
+      if (plan && activeProgram) {
+        router.replace(`/(rehab)/plan-created?planId=${plan.id}&programId=${activeProgram.id}`);
       } else {
         // Fallback: go back to home
         router.back();
