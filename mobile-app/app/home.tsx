@@ -27,12 +27,12 @@ export default function Home() {
     }
   }, [user?.mode, loadActiveProgram]);
 
-  // Navigate to rehab-home with programId once loaded
+  // Navigate to profile page once loaded
   useEffect(() => {
-    if (user?.mode === "rehab" && !programLoading && activeProgram) {
-      router.replace(`/rehab-home?programId=${activeProgram.id}`);
+    if (user?.mode === "rehab" && !programLoading) {
+      router.replace("/profile");
     }
-  }, [user?.mode, programLoading, activeProgram, router]);
+  }, [user?.mode, programLoading, router]);
 
   // Show loading while auth is loading OR while user is authenticated but user object not loaded yet
   if (authLoading || (isAuthenticated && !user) || (user?.mode === "rehab" && programLoading)) {
@@ -78,8 +78,8 @@ export default function Home() {
     return <Redirect href="/(onboarding)/baseline" />;
   }
 
-  // For rehab users with active program - show loading while useEffect redirects to rehab-home
-  if (user.mode === "rehab" && activeProgram) {
+  // For rehab users - show loading while useEffect redirects to profile
+  if (user.mode === "rehab") {
     return (
       <View className="flex-1 justify-center items-center bg-white">
         <ActivityIndicator size="large" />

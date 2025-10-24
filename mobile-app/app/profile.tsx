@@ -148,7 +148,7 @@ export default function ProfileScreen() {
 
               {programsLoading && (
                 <View className="py-4">
-                  <ActivityIndicator size="small" />
+                  <ActivityIndicator size="large" />
                 </View>
               )}
 

@@ -10,7 +10,7 @@ export default function AIAdviceLoadingSkeleton() {
     <Card className="mb-4 bg-blue-50">
       <Card.Content>
         <View className="flex-row items-center justify-center py-8">
-          <ActivityIndicator size="large" color="#2563eb" />
+          <ActivityIndicator size="large" />
           <Text className="text-base text-blue-700 ml-3">Generating AI insights...</Text>
         </View>
       </Card.Content>
