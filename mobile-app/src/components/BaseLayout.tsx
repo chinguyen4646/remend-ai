@@ -1,6 +1,8 @@
 import { ReactNode } from "react";
 import { ScrollView, View, ViewStyle, KeyboardAvoidingView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { usePathname } from "expo-router";
+import BottomTabBar from "./BottomTabBar";
 
 interface BaseLayoutProps {
   children: ReactNode;
@@ -46,6 +48,13 @@ export default function BaseLayout({
   className,
 }: BaseLayoutProps) {
   const insets = useSafeAreaInsets();
+  const pathname = usePathname();
+
+  // Check if bottom tab bar should be visible (hide only on auth and onboarding)
+  const showTabBar = !pathname.startsWith("/(auth)") && !pathname.startsWith("/(onboarding)");
+
+  // Add extra bottom padding when tab bar is visible (56px for tab bar height)
+  const bottomPadding = showTabBar ? 56 : 0;
 
   const content = scrollable ? (
     <ScrollView
@@ -53,6 +62,7 @@ export default function BaseLayout({
       contentContainerClassName={
         centered ? "flex-grow justify-center items-center px-8 py-6" : "items-center px-8 py-6"
       }
+      contentContainerStyle={{ paddingBottom: bottomPadding }}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps={keyboardAvoiding ? "handled" : undefined}
     >
@@ -63,6 +73,7 @@ export default function BaseLayout({
       className={
         centered ? "flex-1 justify-center items-center px-8 py-6" : "flex-1 items-center px-8 py-6"
       }
+      style={{ paddingBottom: bottomPadding }}
     >
       <View className="w-full max-w-md">{children}</View>
     </View>
@@ -93,6 +104,7 @@ export default function BaseLayout({
       ]}
     >
       {wrappedContent}
+      <BottomTabBar />
     </View>
   );
 }

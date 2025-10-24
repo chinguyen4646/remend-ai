@@ -3,13 +3,11 @@ import { View, RefreshControl, ScrollView } from "react-native";
 import { Text, Button, Card, ActivityIndicator } from "react-native-paper";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useCallback } from "react";
-import { useAuthStore } from "../src/stores/authStore";
 import { useWellnessLogStore } from "../src/stores/wellnessLogStore";
 import BaseLayout from "../src/components/BaseLayout";
 import { formatCalendarDate } from "../src/utils/dates";
 
 export default function MaintenanceHomeScreen() {
-  const { user } = useAuthStore();
   const { logs, hasLoggedToday, loadLogs, isLoading } = useWellnessLogStore();
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
@@ -29,15 +27,6 @@ export default function MaintenanceHomeScreen() {
     setRefreshing(true);
     await loadLogs("maintenance");
     setRefreshing(false);
-  };
-
-  const handleNavigateToProfile = () => {
-    router.push("/profile");
-  };
-
-  const handleLogout = async () => {
-    await useAuthStore.getState().logout();
-    router.replace("/(auth)/login");
   };
 
   const handleCheckIn = () => {
@@ -64,13 +53,7 @@ export default function MaintenanceHomeScreen() {
             <Text variant="headlineMedium" className="font-bold mb-2">
               Maintenance Mode 💪
             </Text>
-            <Text variant="bodyLarge" className="text-gray-600">
-              Welcome back, {user?.fullName || "there"}
-            </Text>
           </View>
-          <Button mode="text" onPress={handleNavigateToProfile} compact>
-            <Text>Me</Text>
-          </Button>
         </View>
 
         {/* Check-in CTA */}
@@ -161,10 +144,6 @@ export default function MaintenanceHomeScreen() {
             </Card.Content>
           </Card>
         )}
-
-        <Button mode="outlined" onPress={handleLogout} className="mt-4 mb-4" textColor="#dc2626">
-          <Text>Sign Out</Text>
-        </Button>
       </ScrollView>
     </BaseLayout>
   );

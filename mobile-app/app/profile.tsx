@@ -61,11 +61,6 @@ export default function ProfileScreen() {
     router.back();
   };
 
-  const handleLogout = async () => {
-    await useAuthStore.getState().logout();
-    router.replace("/(auth)/login");
-  };
-
   const handleGoToHome = () => {
     if (user?.mode === "rehab") {
       router.push("/home");
@@ -109,10 +104,6 @@ export default function ProfileScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
       >
-        <Button mode="text" onPress={handleBack} className="self-start mb-4">
-          <Text>← Back</Text>
-        </Button>
-
         <Text variant="headlineMedium" className="font-bold mb-6">
           Profile
         </Text>
@@ -223,10 +214,6 @@ export default function ProfileScreen() {
             </Card.Content>
           </Card>
         )}
-
-        <Button mode="outlined" onPress={handleLogout} className="mt-4" textColor="#dc2626">
-          <Text>Sign Out</Text>
-        </Button>
       </ScrollView>
     </BaseLayout>
   );

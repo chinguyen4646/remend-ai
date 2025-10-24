@@ -2,7 +2,6 @@ import { useEffect, useState, useCallback } from "react";
 import { View, RefreshControl, ScrollView } from "react-native";
 import { Text, Button, Card, ActivityIndicator, Chip } from "react-native-paper";
 import { useRouter, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { useAuthStore } from "../src/stores/authStore";
 import { useRehabLogStore } from "../src/stores/rehabLogStore";
 import { rehabApi } from "../src/api/rehab";
 import type { RehabProgram } from "../src/types/rehab";
@@ -11,7 +10,6 @@ import Sparkline from "../src/components/Sparkline";
 import { formatCalendarDate } from "../src/utils/dates";
 
 export default function RehabHomeScreen() {
-  const { user } = useAuthStore();
   const { programId } = useLocalSearchParams<{ programId: string }>();
   const { logs, hasLoggedToday, loadLogs, isLoading: logsLoading } = useRehabLogStore();
   const router = useRouter();
@@ -57,15 +55,6 @@ export default function RehabHomeScreen() {
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchProgram();
-  };
-
-  const handleNavigateToProfile = () => {
-    router.push("/profile");
-  };
-
-  const handleLogout = async () => {
-    await useAuthStore.getState().logout();
-    router.replace("/(auth)/login");
   };
 
   const handleLogToday = () => {
@@ -135,13 +124,7 @@ export default function RehabHomeScreen() {
                 {program.status}
               </Chip>
             </View>
-            <Text variant="bodyLarge" className="text-gray-600">
-              Welcome back, {user?.fullName || "there"}
-            </Text>
           </View>
-          <Button mode="text" onPress={handleNavigateToProfile} compact>
-            <Text>Me</Text>
-          </Button>
         </View>
         {program.status === "active" && !hasLoggedToday && (
           <Card className="mb-4" mode="elevated">
@@ -241,9 +224,6 @@ export default function RehabHomeScreen() {
             </Card.Content>
           </Card>
         )}
-        <Button mode="outlined" onPress={handleLogout} className="mt-4 mb-4" textColor="#dc2626">
-          <Text>Sign Out</Text>
-        </Button>
       </ScrollView>
     </BaseLayout>
   );
