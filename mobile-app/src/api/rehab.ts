@@ -15,6 +15,11 @@ export const rehabApi = {
     return data;
   },
 
+  getProgram: async (id: number): Promise<{ program: RehabProgram }> => {
+    const { data } = await api.get<{ program: RehabProgram }>(`/api/rehab-programs/${id}`);
+    return data;
+  },
+
   getActiveProgram: async (): Promise<RehabProgram | null> => {
     const { programs } = await rehabApi.getPrograms();
     return programs.find((p) => p.status === "active") || null;

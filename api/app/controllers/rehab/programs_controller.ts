@@ -138,4 +138,20 @@ export default class ProgramsController {
 
     return response.ok({ programs });
   }
+
+  async show({ auth, response, params }: HttpContext) {
+    const user = auth.user!;
+
+    const program = await RehabProgram.find(params.id);
+
+    if (!program) {
+      return response.notFound({ errors: [{ message: "Program not found" }] });
+    }
+
+    if (program.userId !== user.id) {
+      return response.forbidden({ errors: [{ message: "Unauthorized" }] });
+    }
+
+    return response.ok({ program });
+  }
 }

@@ -1,25 +1,41 @@
 import { useEffect } from "react";
 import { View } from "react-native";
-import { ActivityIndicator } from "react-native-paper";
+import { ActivityIndicator, Text, Button } from "react-native-paper";
 import { useRouter, Redirect } from "expo-router";
 import { useAuthStore } from "../src/stores/authStore";
+import { useRehabProgramStore } from "../src/stores/rehabProgramStore";
 import { features } from "../src/config/features";
 
 /**
  * Home route that redirects to the appropriate home screen based on user mode
  */
 export default function Home() {
-  const { user, isAuthenticated, isLoading } = useAuthStore();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuthStore();
+  const { activeProgram, isLoading: programLoading, loadActiveProgram } = useRehabProgramStore();
   const router = useRouter();
 
   // If user logs out, redirect to login
   useEffect(() => {
-    if (!isAuthenticated && !isLoading) {
+    if (!isAuthenticated && !authLoading) {
       router.replace("/(auth)/login");
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, authLoading, router]);
 
-  if (isLoading) {
+  // Fetch active program for rehab mode
+  useEffect(() => {
+    if (user?.mode === "rehab") {
+      loadActiveProgram();
+    }
+  }, [user?.mode, loadActiveProgram]);
+
+  // Navigate to rehab-home with programId once loaded
+  useEffect(() => {
+    if (user?.mode === "rehab" && !programLoading && activeProgram) {
+      router.replace(`/rehab-home?programId=${activeProgram.id}`);
+    }
+  }, [user?.mode, programLoading, activeProgram, router]);
+
+  if (authLoading || (user?.mode === "rehab" && programLoading)) {
     return (
       <View className="flex-1 justify-center items-center bg-white">
         <ActivityIndicator size="large" />
@@ -36,10 +52,29 @@ export default function Home() {
     return <Redirect href="/(onboarding)/baseline" />;
   }
 
+  // For rehab mode: show no active program message
+  if (user.mode === "rehab" && !programLoading && !activeProgram) {
+    return (
+      <View className="flex-1 justify-center items-center bg-white p-6">
+        <Text variant="headlineMedium" className="font-bold mb-4 text-center">
+          No Active Program
+        </Text>
+        <Text variant="bodyLarge" className="text-gray-600 mb-6 text-center">
+          Create a rehab program to start tracking your recovery
+        </Text>
+        <Button
+          mode="contained"
+          onPress={() => router.push("/(onboarding)/rehab-setup")}
+          icon="plus"
+        >
+          <Text>Create Program</Text>
+        </Button>
+      </View>
+    );
+  }
+
   // Redirect to appropriate home screen based on mode
-  if (user.mode === "rehab") {
-    return <Redirect href="/rehab-home" />;
-  } else if (user.mode === "maintenance") {
+  if (user.mode === "maintenance") {
     return <Redirect href="/maintenance-home" />;
   } else if (user.mode === "general") {
     // If general mode is disabled, redirect to onboarding flow to choose rehab/maintenance

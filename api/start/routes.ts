@@ -64,6 +64,7 @@ router
   .group(() => {
     router.post("/", [ProgramsController, "create"]);
     router.get("/", [ProgramsController, "index"]);
+    router.get("/:id", [ProgramsController, "show"]);
     router.patch("/:id/status", [ProgramsController, "updateStatus"]);
   })
   .prefix("/api/rehab-programs")

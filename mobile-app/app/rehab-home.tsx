@@ -1,60 +1,62 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { View, RefreshControl, ScrollView } from "react-native";
-import { Text, Button, Card, ActivityIndicator, Banner } from "react-native-paper";
-import { useRouter, useFocusEffect } from "expo-router";
-import { useCallback } from "react";
+import { Text, Button, Card, ActivityIndicator, Chip } from "react-native-paper";
+import { useRouter, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useAuthStore } from "../src/stores/authStore";
-import { useRehabProgramStore } from "../src/stores/rehabProgramStore";
 import { useRehabLogStore } from "../src/stores/rehabLogStore";
+import { rehabApi } from "../src/api/rehab";
+import type { RehabProgram } from "../src/types/rehab";
 import BaseLayout from "../src/components/BaseLayout";
 import Sparkline from "../src/components/Sparkline";
 import { formatCalendarDate } from "../src/utils/dates";
 
 export default function RehabHomeScreen() {
   const { user } = useAuthStore();
-  const { activeProgram, isLoading, loadActiveProgram } = useRehabProgramStore();
+  const { programId } = useLocalSearchParams<{ programId: string }>();
   const { logs, hasLoggedToday, loadLogs, isLoading: logsLoading } = useRehabLogStore();
   const router = useRouter();
+  const [program, setProgram] = useState<RehabProgram | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    loadActiveProgram();
-  }, [loadActiveProgram]);
+  const fetchProgram = async () => {
+    if (!programId) {
+      setError("No program ID provided");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      setError(null);
+      const response = await rehabApi.getProgram(Number(programId));
+      setProgram(response.program);
+      // Load logs for this program
+      await loadLogs(Number(programId));
+    } catch (err: unknown) {
+      setError(err.response?.data?.errors?.[0]?.message || "Failed to load program");
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    if (activeProgram) {
-      loadLogs(activeProgram.id);
-    }
-  }, [activeProgram, loadLogs]);
+    fetchProgram();
+  }, [programId]);
 
   // Reload logs when screen comes into focus (e.g., after creating a log)
   useFocusEffect(
     useCallback(() => {
-      if (activeProgram) {
-        loadLogs(activeProgram.id);
+      if (program) {
+        loadLogs(program.id);
       }
-    }, [activeProgram, loadLogs]),
+    }, [program, loadLogs]),
   );
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadActiveProgram();
-    if (activeProgram) {
-      await loadLogs(activeProgram.id);
-    }
-    setRefreshing(false);
-  };
-
-  if (isLoading) {
-    return (
-      <View className="flex-1 justify-center items-center bg-white">
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
-
-  const handleSetupProgram = () => {
-    router.push("/(onboarding)/rehab-setup");
+    await fetchProgram();
   };
 
   const handleNavigateToProfile = () => {
@@ -70,11 +72,44 @@ export default function RehabHomeScreen() {
     router.push("/(rehab)/log-form");
   };
 
-  const formatSide = (side: string) => {
-    if (side === "both") return "Both";
-    if (side === "na") return "";
-    return side.charAt(0).toUpperCase() + side.slice(1);
+  const getStatusColor = (status: string) => {
+    if (status === "active") return "#10b981"; // green
+    if (status === "paused") return "#f59e0b"; // yellow
+    return "#6b7280"; // gray
   };
+
+  const formatArea = (program: RehabProgram) => {
+    const side =
+      program.side === "both"
+        ? "Both"
+        : program.side === "na"
+          ? ""
+          : program.side.charAt(0).toUpperCase() + program.side.slice(1);
+    const area =
+      program.area === "other" ? program.areaOtherLabel || "Other" : program.area.replace("_", " ");
+    return `${side} ${area}`.trim();
+  };
+
+  if (isLoading) {
+    return (
+      <View className="flex-1 justify-center items-center bg-white">
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  if (error || !program) {
+    return (
+      <View className="flex-1 justify-center items-center bg-white p-6">
+        <Text variant="bodyLarge" className="text-red-600 mb-4">
+          {error || "Program not found"}
+        </Text>
+        <Button mode="contained" onPress={() => router.back()}>
+          <Text>Go Back</Text>
+        </Button>
+      </View>
+    );
+  }
 
   // Get pain scores for sparkline (last 14 days, most recent on right)
   const painScores = [...logs].reverse().map((log) => log.pain);
@@ -88,9 +123,18 @@ export default function RehabHomeScreen() {
       >
         <View className="mb-6 flex-row justify-between items-start">
           <View className="flex-1">
-            <Text variant="headlineMedium" className="font-bold mb-2">
-              Recovery Mode 🦵
-            </Text>
+            <View className="flex-row items-center gap-2 mb-2">
+              <Text variant="headlineMedium" className="font-bold">
+                {formatArea(program)}
+              </Text>
+              <Chip
+                style={{ backgroundColor: getStatusColor(program.status) }}
+                textStyle={{ color: "white" }}
+                compact
+              >
+                {program.status}
+              </Chip>
+            </View>
             <Text variant="bodyLarge" className="text-gray-600">
               Welcome back, {user?.fullName || "there"}
             </Text>
@@ -99,26 +143,11 @@ export default function RehabHomeScreen() {
             <Text>Me</Text>
           </Button>
         </View>
-        {!activeProgram && (
-          <Banner
-            visible
-            icon="alert-circle"
-            actions={[
-              {
-                label: "Create Program",
-                onPress: handleSetupProgram,
-              },
-            ]}
-          >
-            <Text>Create your rehab program to start logging.</Text>
-          </Banner>
-        )}
-        {activeProgram && !hasLoggedToday && (
+        {program.status === "active" && !hasLoggedToday && (
           <Card className="mb-4" mode="elevated">
             <Card.Content>
               <Text variant="titleLarge" className="font-bold mb-2">
-                Log today for your {formatSide(activeProgram.side)}{" "}
-                {activeProgram.area.replace("_", " ")}
+                Log today's progress
               </Text>
               <Text variant="bodyMedium" className="text-gray-600 mb-4">
                 Track your progress to stay on top of your recovery
@@ -129,7 +158,7 @@ export default function RehabHomeScreen() {
             </Card.Content>
           </Card>
         )}
-        {activeProgram && hasLoggedToday && (
+        {program.status === "active" && hasLoggedToday && (
           <Card className="mb-4" mode="outlined">
             <Card.Content>
               <Text variant="titleMedium" className="font-bold mb-2 text-green-600">
@@ -141,7 +170,7 @@ export default function RehabHomeScreen() {
             </Card.Content>
           </Card>
         )}
-        {activeProgram && logs.length > 0 && (
+        {program && logs.length > 0 && (
           <>
             <Card className="mb-4">
               <Card.Content>
@@ -200,7 +229,7 @@ export default function RehabHomeScreen() {
             </Card>
           </>
         )}
-        {activeProgram && logs.length === 0 && !logsLoading && (
+        {program && logs.length === 0 && !logsLoading && (
           <Card className="mb-4">
             <Card.Content>
               <Text variant="titleMedium" className="font-bold mb-2">
