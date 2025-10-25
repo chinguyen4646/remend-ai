@@ -4,7 +4,6 @@ import { Text, Card, Button, ActivityIndicator, Chip } from "react-native-paper"
 import { useRouter } from "expo-router";
 import { authApi } from "../src/api/auth";
 import type { User } from "../src/types/auth";
-import { useAuthStore } from "../src/stores/authStore";
 import BaseLayout from "../src/components/BaseLayout";
 import { rehabApi } from "../src/api/rehab";
 import type { RehabProgram } from "../src/types/rehab";
@@ -59,16 +58,6 @@ export default function ProfileScreen() {
 
   const handleBack = () => {
     router.back();
-  };
-
-  const handleGoToHome = () => {
-    if (user?.mode === "rehab") {
-      router.push("/home");
-    } else if (user?.mode === "maintenance") {
-      router.push("/maintenance-home");
-    } else if (user?.mode === "general") {
-      router.push("/general-home");
-    }
   };
 
   if (isLoading) {
@@ -200,7 +189,7 @@ export default function ProfileScreen() {
                           </View>
                           <Chip
                             style={{ backgroundColor: getStatusColor() }}
-                            textStyle={{ color: "white", fontSize: 12 }}
+                            textStyle={{ fontSize: 12 }}
                             compact
                           >
                             {program.status}
