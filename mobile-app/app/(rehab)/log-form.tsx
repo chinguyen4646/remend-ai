@@ -1,17 +1,27 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { View, ScrollView, TouchableOpacity } from "react-native";
 import { Text, Button, TextInput, Snackbar } from "react-native-paper";
 import Slider from "@react-native-community/slider";
 import { useRouter } from "expo-router";
-import Voice from "@react-native-voice/voice";
 import { useRehabProgramStore } from "../../src/stores/rehabProgramStore";
 import { useRehabLogStore } from "../../src/stores/rehabLogStore";
 import BaseLayout from "../../src/components/BaseLayout";
+import { useVoiceProvider } from "../../src/hooks/useVoiceProvider";
 
 export default function LogFormScreen() {
   const router = useRouter();
   const { activeProgram } = useRehabProgramStore();
   const { createLog, isLoading, error, clearError } = useRehabLogStore();
+
+  // Voice provider
+  const {
+    startRecording: startVoiceRecording,
+    stopRecording: stopVoiceRecording,
+    isRecording,
+    isInitializing: voiceInitializing,
+    error: voiceError,
+    liveTranscript,
+  } = useVoiceProvider();
 
   // Form state
   const [pain, setPain] = useState(0);
@@ -22,65 +32,40 @@ export default function LogFormScreen() {
   >(null);
   const [notes, setNotes] = useState("");
   const [notesError, setNotesError] = useState<string | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [voiceError, setVoiceError] = useState<string | null>(null);
   const [aggravators, setAggravators] = useState<string[]>([]);
+  const [isStartingRecording, setIsStartingRecording] = useState(false);
 
-  // Use ref to avoid re-registering event handlers
+  // Use ref to save notes before recording
   const notesBeforeRecordingRef = useRef("");
-
-  // Voice recognition setup
-  useEffect(() => {
-    Voice.onSpeechStart = () => {
-      setIsRecording(true);
-    };
-
-    Voice.onSpeechEnd = () => {
-      setIsRecording(false);
-    };
-
-    Voice.onSpeechResults = (event) => {
-      if (event.value && event.value[0]) {
-        // Replace with latest transcription (not append)
-        const transcription = event.value[0];
-        const combinedText = notesBeforeRecordingRef.current
-          ? `${notesBeforeRecordingRef.current} ${transcription}`
-          : transcription;
-        setNotes(combinedText);
-        if (notesError) setNotesError(null);
-      }
-    };
-
-    Voice.onSpeechError = (event) => {
-      console.error("Speech error:", event);
-      setIsRecording(false);
-      setVoiceError("Unable to record. Please check microphone permissions.");
-    };
-
-    return () => {
-      Voice.destroy().then(Voice.removeAllListeners);
-    };
-  }, [notesError]);
 
   const startRecording = async () => {
     try {
-      setVoiceError(null);
+      setIsStartingRecording(true);
       // Save current notes before starting
       notesBeforeRecordingRef.current = notes;
-      await Voice.start("en-US");
+      await startVoiceRecording();
     } catch (error) {
       console.error("Start recording error:", error);
-      setVoiceError("Unable to start recording. Please check permissions.");
+    } finally {
+      setIsStartingRecording(false);
     }
   };
 
   const stopRecording = async () => {
     try {
-      await Voice.stop();
-      setIsRecording(false);
-      // Keep the final transcription that was set in onSpeechResults
+      console.log("[log-form] Calling stopVoiceRecording...");
+      const transcription = await stopVoiceRecording();
+
+      // Combine with notes that existed before recording
+      const combinedText = notesBeforeRecordingRef.current
+        ? `${notesBeforeRecordingRef.current} ${transcription}`
+        : transcription;
+
+      setNotes(combinedText);
+
+      if (notesError) setNotesError(null);
     } catch (error) {
-      console.error("Stop recording error:", error);
+      console.error("[log-form] Stop recording error:", error);
     }
   };
 
@@ -311,13 +296,24 @@ export default function LogFormScreen() {
             {/* Mic Button */}
             <TouchableOpacity
               onPress={isRecording ? stopRecording : startRecording}
-              disabled={isLoading}
+              disabled={isLoading || voiceInitializing || isStartingRecording}
               className={`flex-row items-center px-3 py-2 rounded-full ${
-                isRecording ? "bg-red-500" : "bg-indigo-600"
+                isRecording
+                  ? "bg-red-500"
+                  : voiceInitializing || isStartingRecording
+                    ? "bg-gray-400"
+                    : "bg-indigo-600"
               }`}
+              style={{ opacity: voiceInitializing || isStartingRecording ? 0.6 : 1 }}
             >
               <Text className="text-white text-sm mr-1">
-                {isRecording ? "⏹ Stop" : "🎤 Record"}
+                {voiceInitializing
+                  ? "Setting up..."
+                  : isStartingRecording
+                    ? "Starting..."
+                    : isRecording
+                      ? "⏹ Stop"
+                      : "🎤 Record"}
               </Text>
             </TouchableOpacity>
           </View>
@@ -326,6 +322,14 @@ export default function LogFormScreen() {
             <View className="mb-2 bg-red-50 px-3 py-2 rounded">
               <Text variant="bodySmall" className="text-red-600">
                 🔴 Listening... Speak now
+              </Text>
+            </View>
+          )}
+          {/* Voice Initialization */}
+          {voiceInitializing && (
+            <View className="mb-2 bg-blue-50 px-3 py-2 rounded">
+              <Text variant="bodySmall" className="text-blue-700">
+                Preparing speech recognition...
               </Text>
             </View>
           )}
@@ -343,18 +347,20 @@ export default function LogFormScreen() {
           </Text>
           <View className="relative">
             <TextInput
-              value={notes}
+              value={isRecording ? liveTranscript : notes}
               onChangeText={(text) => {
-                setNotes(text);
-                // Clear error when user starts typing
-                if (notesError) setNotesError(null);
+                if (!isRecording) {
+                  setNotes(text);
+                  // Clear error when user starts typing
+                  if (notesError) setNotesError(null);
+                }
               }}
               onBlur={validateNotes}
               mode="outlined"
               multiline
               numberOfLines={6}
               placeholder="Tap here to type or use your keyboard mic..."
-              disabled={isLoading}
+              disabled={isLoading || isRecording}
               error={!!notesError}
             />
             {/* Character Counter Overlay */}
