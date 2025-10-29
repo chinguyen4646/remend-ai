@@ -6,20 +6,48 @@ import User from "#models/user";
 export type ModeSuggestion = "rehab" | "maintenance";
 export type RiskLevel = "low" | "medium" | "high";
 
+// Onboarding v2 data structure
 export interface OnboardingData {
-  area: string; // knee, shoulder, back, other
-  areaOtherLabel?: string; // if area = 'other'
-  onset: string; // recent, ongoing, chronic
+  // Screen 1: Area
+  area:
+    | "knee"
+    | "shoulder"
+    | "lower_back"
+    | "upper_back"
+    | "ankle"
+    | "hip"
+    | "wrist"
+    | "elbow"
+    | "other";
+  areaOtherLabel?: string;
+
+  // Screen 2: Description (stored separately in userDescription column)
+  // userDescription is NOT in data JSONB, it has its own column
+  redFlags: string[]; // night_pain, numbness, trauma, fever, locking
+
+  // Screen 3: Duration & Intensity
+  onset: "recent" | "1-3months" | "3plus" | "incident";
   painRest: number; // 0-10
   painActivity: number; // 0-10
   stiffness: number; // 0-10
-  timing: string[]; // before, during, after
+
+  // Screen 4: Aggravators & Easers
   aggravators: string[];
   easers: string[];
-  activityLevel: string; // low, moderate, high
-  goal: string; // return_to_sport, walk_pain_free, reduce_stiffness, maintain_mobility
+}
 
-  redFlags: string[]; // night_pain, numbness, trauma, fever, locking
+// AI Pattern Insight structure (versioned for future-proofing)
+export interface AIPatternInsight {
+  version: string; // e.g., "1.0"
+  data: {
+    suspected_pattern: string;
+    reasoning: string[];
+    recommended_focus: string[];
+    reassurance: string;
+    caution: string | null;
+    confidence: "high" | "medium" | "low";
+    suggested_side?: "left" | "right" | "both" | "na";
+  };
 }
 
 export default class UserOnboardingProfile extends BaseModel {
@@ -31,6 +59,16 @@ export default class UserOnboardingProfile extends BaseModel {
 
   @column()
   declare data: OnboardingData;
+
+  // V2 columns: dedicated storage for description and AI insights
+  @column()
+  declare userDescription: string | null;
+
+  @column()
+  declare aiPatternJson: AIPatternInsight | null;
+
+  @column()
+  declare areaOtherLabel: string | null;
 
   @column()
   declare modeSuggestion: ModeSuggestion;

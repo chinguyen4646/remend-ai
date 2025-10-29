@@ -21,12 +21,12 @@ export default function BottomTabBar() {
   // Hide entire bar on auth and onboarding routes
   const authRoutes = ["/login", "/register"];
   const onboardingRoutes = [
-    "/baseline",
-    "/goal",
-    "/safety",
-    "/recommendation",
-    "/mode-picker",
-    "/rehab-setup",
+    "/welcome",
+    "/area",
+    "/describe",
+    "/duration-intensity",
+    "/aggravators-easers",
+    "/ai-insight",
   ];
   const shouldHideBar = authRoutes.includes(pathname) || onboardingRoutes.includes(pathname);
 

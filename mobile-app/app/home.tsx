@@ -49,7 +49,7 @@ export default function Home() {
 
   // If no mode selected, go to onboarding flow
   if (!user?.mode) {
-    return <Redirect href="/(onboarding)/baseline" />;
+    return <Redirect href="/(onboarding)/welcome" />;
   }
 
   // For rehab mode: show no active program message
@@ -62,11 +62,7 @@ export default function Home() {
         <Text variant="bodyLarge" className="text-gray-600 mb-6 text-center">
           Create a rehab program to start tracking your recovery
         </Text>
-        <Button
-          mode="contained"
-          onPress={() => router.push("/(onboarding)/rehab-setup")}
-          icon="plus"
-        >
+        <Button mode="contained" onPress={() => router.push("/(onboarding)/welcome")} icon="plus">
           <Text>Create Program</Text>
         </Button>
       </View>
@@ -75,7 +71,7 @@ export default function Home() {
 
   // Only rehab mode is supported - redirect any other modes to onboarding
   if (user.mode !== "rehab") {
-    return <Redirect href="/(onboarding)/baseline" />;
+    return <Redirect href="/(onboarding)/welcome" />;
   }
 
   // For rehab users - show loading while useEffect redirects to profile
@@ -88,5 +84,5 @@ export default function Home() {
   }
 
   // Fallback - should not reach here for valid rehab users
-  return <Redirect href="/(onboarding)/baseline" />;
+  return <Redirect href="/(onboarding)/welcome" />;
 }

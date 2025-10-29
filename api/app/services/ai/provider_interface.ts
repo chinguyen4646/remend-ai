@@ -74,6 +74,35 @@ export interface AIOutputJson {
 }
 
 /**
+ * Onboarding data structure for AI analysis
+ */
+export interface OnboardingDataForAI {
+  area: string;
+  areaOtherLabel?: string;
+  userDescription: string;
+  onset: string;
+  painRest: number;
+  painActivity: number;
+  stiffness: number;
+  aggravators: string[];
+  easers: string[];
+  redFlags: string[];
+}
+
+/**
+ * AI Pattern Insight (unwrapped data, without version wrapper)
+ */
+export interface AIOnboardingInsight {
+  suspected_pattern: string;
+  reasoning: string[];
+  recommended_focus: string[];
+  reassurance: string;
+  caution: string | null;
+  confidence: "high" | "medium" | "low";
+  suggested_side?: "left" | "right" | "both" | "na";
+}
+
+/**
  * Provider interface for AI services
  * Allows swapping OpenAI → Claude/Gemini/etc. later
  */
@@ -96,4 +125,12 @@ export interface AIProvider {
     shortlist: ShortlistExercise[],
     userContext: UserContextJson,
   ): Promise<AIOutputJson>;
+
+  /**
+   * Get onboarding insight from pain description and data
+   * @param data - Onboarding data from user input
+   * @returns AI-generated pattern insight
+   * @throws Error on timeout (10s) or API failure
+   */
+  getOnboardingInsight(data: OnboardingDataForAI): Promise<AIOnboardingInsight>;
 }

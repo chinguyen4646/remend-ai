@@ -6,6 +6,8 @@ import type {
   ShortlistExercise,
   UserContextJson,
   AIOutputJson,
+  OnboardingDataForAI,
+  AIOnboardingInsight,
 } from "./provider_interface.js";
 import type RehabLog from "#models/rehab_log";
 import { buildEarlySnapshotPrompt, buildFullFeedbackPrompt } from "./prompt_builder.js";
@@ -294,6 +296,189 @@ Return only valid JSON.`;
       summary: summary.trim(),
       bullets: validatedBullets as any,
       caution: validatedCaution,
+    };
+  }
+
+  /**
+   * Get onboarding insight from pain description and data
+   * Analyzes user's pain description and provides pattern insight
+   * with 10-second timeout
+   */
+  async getOnboardingInsight(data: OnboardingDataForAI): Promise<AIOnboardingInsight> {
+    try {
+      const startTime = Date.now();
+      const prompt = this.buildOnboardingPrompt(data);
+
+      const completion = await this.client.chat.completions.create({
+        model: aiConfig.openai.model,
+        temperature: 0.3, // Deterministic for consistency
+        max_tokens: 500, // Concise responses
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content: `You are a cautious, supportive physiotherapy assistant.
+Analyze the user's pain description and data.
+Infer the most likely pain pattern (non-diagnostic, educational only).
+Suggest which body side is affected if mentioned in the description.
+Return safe, conservative recommendations.
+
+CRITICAL: This is educational guidance only, NOT medical diagnosis.
+Your tone should be supportive and reassuring, never authoritative or diagnostic.`,
+          },
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+      });
+
+      const duration = Date.now() - startTime;
+      const content = completion.choices[0]?.message?.content;
+
+      if (!content) {
+        logger.error("OpenAI returned empty response for onboarding insight");
+        throw new Error("Empty response from AI");
+      }
+
+      // Parse and validate JSON response
+      const parsed = JSON.parse(content);
+      const insight = this.validateOnboardingInsight(parsed);
+
+      logger.info(
+        {
+          area: data.area,
+          duration,
+          tokens: completion.usage?.total_tokens,
+          confidence: insight.confidence,
+        },
+        "Onboarding insight generated successfully",
+      );
+
+      return insight;
+    } catch (error) {
+      logger.error({ error: error.message, area: data.area }, "Failed to get onboarding insight");
+
+      if (error instanceof OpenAI.APIError) {
+        if (error.status === 429) {
+          throw new Error("AI service rate limit exceeded. Please try again in a moment.");
+        }
+        if (error.status === 401) {
+          throw new Error("AI service authentication failed. Please contact support.");
+        }
+      }
+
+      throw new Error("Unable to generate onboarding insight. Please try again later.");
+    }
+  }
+
+  /**
+   * Build prompt for onboarding insight
+   */
+  private buildOnboardingPrompt(data: OnboardingDataForAI): string {
+    const areaLabel = data.areaOtherLabel
+      ? `${data.area} (${data.areaOtherLabel})`
+      : data.area.replace("_", " ");
+
+    return `
+User's pain description: "${data.userDescription}"
+
+Pain levels:
+- At rest: ${data.painRest}/10
+- During activity: ${data.painActivity}/10
+- Stiffness: ${data.stiffness}/10
+
+Duration: ${data.onset}
+Body area: ${areaLabel}
+
+Makes it worse: ${data.aggravators.length > 0 ? data.aggravators.join(", ") : "none specified"}
+Helps: ${data.easers.length > 0 ? data.easers.join(", ") : "none specified"}
+Red flags: ${data.redFlags.length > 0 ? data.redFlags.join(", ") : "none"}
+
+Return JSON with:
+{
+  "suspected_pattern": "friendly name for the likely pain pattern (e.g., 'front-of-knee load sensitivity')",
+  "reasoning": ["key observation 1", "key observation 2", "key observation 3"],
+  "recommended_focus": ["focus area 1 (e.g., 'gentle activation')", "focus area 2 (e.g., 'mobility')"],
+  "reassurance": "brief reassuring message (1-2 sentences)",
+  "caution": "brief caution if needed (e.g., 'Avoid deep squats if painful'), or null",
+  "confidence": "high" | "medium" | "low",
+  "suggested_side": "left" | "right" | "both" | "na" (extract from description if mentioned, otherwise null)
+}
+
+Guidelines:
+- Pattern name should be non-clinical and understandable (avoid medical jargon)
+- Reasoning should be clear observations from the data
+- Recommended focus should be actionable categories (e.g., "isometrics", "mobility", "load management")
+- Reassurance should be warm and encouraging
+- Only add caution if red flags or high pain levels warrant it
+- Confidence should reflect how clear the pattern is from the description
+- Extract side from description if user mentions "left", "right", "both sides", etc.
+
+Return only valid JSON.
+`.trim();
+  }
+
+  /**
+   * Validate and sanitize onboarding insight from AI
+   */
+  private validateOnboardingInsight(parsed: any): AIOnboardingInsight {
+    if (!parsed || typeof parsed !== "object") {
+      throw new Error("Invalid JSON structure from AI");
+    }
+
+    const {
+      suspected_pattern,
+      reasoning,
+      recommended_focus,
+      reassurance,
+      caution,
+      confidence,
+      suggested_side,
+    } = parsed;
+
+    // Validate required fields
+    if (
+      !suspected_pattern ||
+      typeof suspected_pattern !== "string" ||
+      suspected_pattern.trim().length === 0
+    ) {
+      throw new Error("Invalid or missing suspected_pattern in AI response");
+    }
+
+    if (!Array.isArray(reasoning) || reasoning.length === 0) {
+      throw new Error("Invalid or missing reasoning in AI response");
+    }
+
+    if (!Array.isArray(recommended_focus) || recommended_focus.length === 0) {
+      throw new Error("Invalid or missing recommended_focus in AI response");
+    }
+
+    if (!reassurance || typeof reassurance !== "string" || reassurance.trim().length === 0) {
+      throw new Error("Invalid or missing reassurance in AI response");
+    }
+
+    if (!["high", "medium", "low"].includes(confidence)) {
+      throw new Error("Invalid confidence level in AI response");
+    }
+
+    // Validate optional side suggestion
+    const validSides = ["left", "right", "both", "na"];
+    const validatedSide =
+      suggested_side && validSides.includes(suggested_side) ? suggested_side : undefined;
+
+    // Validate caution (can be null or string)
+    const validatedCaution =
+      caution && typeof caution === "string" && caution.trim().length > 0 ? caution.trim() : null;
+
+    return {
+      suspected_pattern: suspected_pattern.trim(),
+      reasoning: reasoning.map((r: any) => String(r).trim()).filter(Boolean),
+      recommended_focus: recommended_focus.map((f: any) => String(f).trim()).filter(Boolean),
+      reassurance: reassurance.trim(),
+      caution: validatedCaution,
+      confidence,
+      suggested_side: validatedSide,
     };
   }
 }

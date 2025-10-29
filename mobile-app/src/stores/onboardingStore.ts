@@ -6,17 +6,13 @@ import type {
   OnboardingData,
   OnboardingProfile,
   OnboardingSubmission,
-  // Area,
-  // Onset,
-  // Timing,
-  // ActivityLevel,
-  Goal,
+  Area,
+  Onset,
   RedFlag,
-  ModeSuggestion,
 } from "../types/onboarding";
 
 interface OnboardingStore {
-  // Onboarding data
+  // Onboarding data (V2)
   data: Partial<OnboardingData>;
 
   // UI state
@@ -26,11 +22,17 @@ interface OnboardingStore {
   // Result from submission
   profile: OnboardingProfile | null;
 
-  // Actions
-  setBaselineData: (data: Partial<OnboardingData>) => void;
-  setGoal: (goal: Goal) => void;
-  setRedFlags: (flags: RedFlag[]) => void;
-  submitOnboarding: (modeSelected: ModeSuggestion) => Promise<OnboardingProfile>;
+  // V2 Actions
+  setArea: (area: Area, areaOtherLabel?: string) => void;
+  setDescription: (userDescription: string, redFlags: RedFlag[]) => void;
+  setDurationIntensity: (
+    onset: Onset,
+    painRest: number,
+    painActivity: number,
+    stiffness: number,
+  ) => void;
+  setAggravatorsEasers: (aggravators: string[], easers: string[]) => void;
+  submitOnboarding: () => Promise<OnboardingProfile>;
   clearError: () => void;
   reset: () => void;
 }
@@ -44,48 +46,53 @@ export const useOnboardingStore = create<OnboardingStore>()(
       error: null,
       profile: null,
 
-      // Actions
-      setBaselineData: (baselineData) =>
+      // V2 Actions
+      setArea: (area, areaOtherLabel) =>
         set((state) => ({
-          data: { ...state.data, ...baselineData },
+          data: { ...state.data, area, areaOtherLabel },
         })),
 
-      setGoal: (goal) =>
+      setDescription: (userDescription, redFlags) =>
         set((state) => ({
-          data: { ...state.data, goal },
+          data: { ...state.data, userDescription, redFlags },
         })),
 
-      setRedFlags: (redFlags) =>
+      setDurationIntensity: (onset, painRest, painActivity, stiffness) =>
         set((state) => ({
-          data: { ...state.data, redFlags },
+          data: { ...state.data, onset, painRest, painActivity, stiffness },
         })),
 
-      submitOnboarding: async (modeSelected) => {
+      setAggravatorsEasers: (aggravators, easers) =>
+        set((state) => ({
+          data: { ...state.data, aggravators, easers },
+        })),
+
+      submitOnboarding: async () => {
         set({ isLoading: true, error: null });
 
         try {
           const onboardingData = get().data as OnboardingData;
 
-          // Validate we have all required fields
+          // Validate we have all required V2 fields
           if (
             !onboardingData.area ||
+            !onboardingData.userDescription ||
+            onboardingData.userDescription.trim().length < 10 ||
             !onboardingData.onset ||
             onboardingData.painRest === undefined ||
             onboardingData.painActivity === undefined ||
             onboardingData.stiffness === undefined ||
-            !onboardingData.timing ||
             !onboardingData.aggravators ||
             !onboardingData.easers ||
-            !onboardingData.activityLevel ||
-            !onboardingData.goal ||
             !onboardingData.redFlags
           ) {
             throw new Error("Please complete all onboarding steps");
           }
 
+          // Hardcode mode to rehab (maintenance disabled)
           const submission: OnboardingSubmission = {
             ...onboardingData,
-            modeSelected,
+            modeSelected: "rehab",
           };
 
           const response = await api.post<{ profile: OnboardingProfile }>(
@@ -97,7 +104,7 @@ export const useOnboardingStore = create<OnboardingStore>()(
 
           set({ profile, isLoading: false });
 
-          // Don't clear data yet - rehab-setup needs it for area
+          // Don't clear data yet - ai-insight screen needs it
           // Data will be cleared when user reaches home screen or manually
 
           return profile;

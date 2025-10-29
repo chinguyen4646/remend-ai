@@ -53,7 +53,7 @@ export default function ModeSwitchModal({ visible, onDismiss, currentMode }: Mod
 
       // Navigate to appropriate screen
       if (mode === "rehab") {
-        router.push("/(onboarding)/rehab-setup");
+        router.push("/(onboarding)/welcome");
       } else if (mode === "maintenance") {
         router.replace("/maintenance-home");
       } else {
