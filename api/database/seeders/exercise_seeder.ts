@@ -56,6 +56,44 @@ export default class extends BaseSeeder {
           created_at: new Date(),
           updated_at: new Date(),
         },
+        // Ankle buckets
+        {
+          area: "ankle",
+          slug: "mobility_ankle",
+          label: "Ankle Mobility",
+          is_active: true,
+          sort_order: 6,
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+        {
+          area: "ankle",
+          slug: "isometric_ankle",
+          label: "Isometric Ankle Strengthening",
+          is_active: true,
+          sort_order: 7,
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+        // Fallback general buckets (used when no pattern match)
+        {
+          area: "general",
+          slug: "mobility_general",
+          label: "General Mobility",
+          is_active: true,
+          sort_order: 98,
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+        {
+          area: "general",
+          slug: "isometric_general",
+          label: "General Isometric Strengthening",
+          is_active: true,
+          sort_order: 99,
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
       ])
       .returning("*");
 
@@ -296,8 +334,188 @@ export default class extends BaseSeeder {
         created_at: new Date(),
         updated_at: new Date(),
       },
+
+      // Ankle Mobility Exercises (2 exercises)
+      {
+        bucket_id: getBucketId("mobility_ankle"),
+        name: "Ankle Pumps",
+        description: "Point and flex your foot while seated or lying down",
+        dosage_low_json: JSON.stringify({
+          sets: 2,
+          reps: 15,
+          rest_seconds: 20,
+          notes: "Full range of motion",
+        }),
+        dosage_mod_json: JSON.stringify({
+          sets: 3,
+          reps: 20,
+          rest_seconds: 20,
+          notes: "Add ankle circles after pumps",
+        }),
+        safety_notes: "Should feel no pain",
+        is_active: true,
+        sort_order: 1,
+        created_at: new Date(),
+        updated_at: new Date(),
+      },
+      {
+        bucket_id: getBucketId("mobility_ankle"),
+        name: "Calf Stretch",
+        description: "Gentle standing or wall calf stretch",
+        dosage_low_json: JSON.stringify({
+          sets: 2,
+          hold_seconds: 20,
+          rest_seconds: 30,
+          notes: "Knee straight for gastrocnemius",
+        }),
+        dosage_mod_json: JSON.stringify({
+          sets: 3,
+          hold_seconds: 30,
+          rest_seconds: 30,
+          notes: "Repeat with bent knee for soleus",
+        }),
+        safety_notes: "Stretch should feel comfortable",
+        is_active: true,
+        sort_order: 2,
+        created_at: new Date(),
+        updated_at: new Date(),
+      },
+
+      // Ankle Isometric Exercises (2 exercises)
+      {
+        bucket_id: getBucketId("isometric_ankle"),
+        name: "Seated Calf Raise Hold",
+        description: "Raise heels off ground while seated and hold",
+        dosage_low_json: JSON.stringify({
+          sets: 2,
+          hold_seconds: 10,
+          rest_seconds: 30,
+          notes: "Keep weight evenly distributed",
+        }),
+        dosage_mod_json: JSON.stringify({
+          sets: 3,
+          hold_seconds: 15,
+          rest_seconds: 30,
+          notes: "Add light weight on knees if tolerated",
+        }),
+        safety_notes: "No cramping should occur",
+        is_active: true,
+        sort_order: 1,
+        created_at: new Date(),
+        updated_at: new Date(),
+      },
+      {
+        bucket_id: getBucketId("isometric_ankle"),
+        name: "Toe Raise Hold",
+        description: "Lift toes while keeping heels on ground",
+        dosage_low_json: JSON.stringify({
+          sets: 2,
+          hold_seconds: 8,
+          rest_seconds: 30,
+          notes: "Focus on anterior tibialis engagement",
+        }),
+        dosage_mod_json: JSON.stringify({
+          sets: 3,
+          hold_seconds: 12,
+          rest_seconds: 30,
+          notes: "Increase hold time gradually",
+        }),
+        safety_notes: "Stop if shin pain occurs",
+        is_active: true,
+        sort_order: 2,
+        created_at: new Date(),
+        updated_at: new Date(),
+      },
+
+      // General Mobility Exercises (fallback - 2 exercises)
+      {
+        bucket_id: getBucketId("mobility_general"),
+        name: "Gentle Walking",
+        description: "Light walking at comfortable pace",
+        dosage_low_json: JSON.stringify({
+          time_seconds: 300,
+          notes: "5 minutes, level surface",
+        }),
+        dosage_mod_json: JSON.stringify({
+          time_seconds: 600,
+          notes: "10 minutes, can vary terrain slightly",
+        }),
+        safety_notes: "Stay within pain-free range",
+        is_active: true,
+        sort_order: 1,
+        created_at: new Date(),
+        updated_at: new Date(),
+      },
+      {
+        bucket_id: getBucketId("mobility_general"),
+        name: "Full Body Stretch",
+        description: "Gentle stretches for major muscle groups",
+        dosage_low_json: JSON.stringify({
+          sets: 1,
+          reps: 5,
+          hold_seconds: 15,
+          notes: "Each major muscle group",
+        }),
+        dosage_mod_json: JSON.stringify({
+          sets: 2,
+          reps: 5,
+          hold_seconds: 20,
+          notes: "Hold each stretch comfortably",
+        }),
+        safety_notes: "Never force a stretch",
+        is_active: true,
+        sort_order: 2,
+        created_at: new Date(),
+        updated_at: new Date(),
+      },
+
+      // General Isometric Exercises (fallback - 2 exercises)
+      {
+        bucket_id: getBucketId("isometric_general"),
+        name: "Static Holds",
+        description: "Gentle static holds in comfortable positions",
+        dosage_low_json: JSON.stringify({
+          sets: 2,
+          hold_seconds: 10,
+          rest_seconds: 30,
+          notes: "Wall sit or plank modifications",
+        }),
+        dosage_mod_json: JSON.stringify({
+          sets: 3,
+          hold_seconds: 15,
+          rest_seconds: 30,
+          notes: "Progress hold time gradually",
+        }),
+        safety_notes: "Maintain steady breathing",
+        is_active: true,
+        sort_order: 1,
+        created_at: new Date(),
+        updated_at: new Date(),
+      },
+      {
+        bucket_id: getBucketId("isometric_general"),
+        name: "Breathing Exercises",
+        description: "Diaphragmatic breathing with gentle core engagement",
+        dosage_low_json: JSON.stringify({
+          sets: 3,
+          reps: 5,
+          hold_seconds: 5,
+          notes: "Exhale with gentle abdominal contraction",
+        }),
+        dosage_mod_json: JSON.stringify({
+          sets: 4,
+          reps: 8,
+          hold_seconds: 5,
+          notes: "Coordinate breathing with movement",
+        }),
+        safety_notes: "Breathe naturally, no straining",
+        is_active: true,
+        sort_order: 2,
+        created_at: new Date(),
+        updated_at: new Date(),
+      },
     ]);
 
-    console.log("✅ Seeded 5 exercise buckets and 10 knee exercises");
+    console.log("✅ Seeded 9 exercise buckets and 22 exercises (knee, ankle, general)");
   }
 }

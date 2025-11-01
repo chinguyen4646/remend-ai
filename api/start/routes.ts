@@ -55,6 +55,7 @@ router
   .group(() => {
     router.post("/submit", [OnboardingController, "submit"]);
     router.get("/profile", [OnboardingController, "getProfile"]);
+    router.post("/create-initial-plan", [OnboardingController, "createInitialPlan"]);
   })
   .prefix("/api/onboarding")
   .use(middleware.auth());

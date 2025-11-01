@@ -18,6 +18,7 @@ export default function AIInsightScreen() {
   const router = useRouter();
   const {
     submitOnboarding,
+    createInitialPlan,
     profile,
     isLoading,
     error,
@@ -61,10 +62,13 @@ export default function AIInsightScreen() {
         // startDate defaults to today on the backend
       });
 
-      // Navigate to profile (rehab home)
-      router.replace("/profile");
+      // Create initial exercise plan from onboarding
+      const { planId } = await createInitialPlan();
+
+      // Navigate to plan-created screen with initial plan
+      router.replace(`/(rehab)/plan-created?planId=${planId}&isInitial=true`);
     } catch (err) {
-      console.error("Program creation error:", err);
+      console.error("Program/plan creation error:", err);
       setIsCreatingProgram(false);
     }
   };
@@ -101,7 +105,7 @@ export default function AIInsightScreen() {
             {error}
           </Text>
           <Button mode="contained" onPress={() => router.back()}>
-            Go Back
+            <Text>Go Back</Text>
           </Button>
         </View>
       </BaseLayout>
@@ -114,10 +118,10 @@ export default function AIInsightScreen() {
         {/* Header */}
         <View className="mb-6">
           <Text variant="headlineMedium" className="font-bold mb-2">
-            Here's what we're seeing
+            Here&apos;s what we&apos;re seeing
           </Text>
           <Text variant="bodyLarge" className="text-gray-600">
-            Based on your description, here's our assessment
+            Based on your description, here&apos;s our assessment
           </Text>
         </View>
 
@@ -164,7 +168,7 @@ export default function AIInsightScreen() {
                     alignSelf: "flex-start",
                   }}
                 >
-                  {aiInsight.confidence} confidence
+                  <Text>{aiInsight.confidence} confidence</Text>
                 </Chip>
               </View>
             </View>
@@ -234,8 +238,8 @@ export default function AIInsightScreen() {
               Ready to build your program
             </Text>
             <Text variant="bodyMedium" className="text-gray-700">
-              We've collected your information and are ready to create a personalized rehab plan
-              tailored to your needs.
+              We&apos;ve collected your information and are ready to create a personalized rehab
+              plan tailored to your needs.
             </Text>
           </View>
         )}
@@ -248,7 +252,7 @@ export default function AIInsightScreen() {
             Which side needs attention?
           </Text>
           <Text variant="bodySmall" className="text-gray-600 mb-3">
-            Select the side that's bothering you
+            Select the side that&apos;s bothering you
           </Text>
           <View className="flex-row flex-wrap gap-3">
             {SIDE_OPTIONS.map((option) => (
@@ -266,7 +270,9 @@ export default function AIInsightScreen() {
                   color: selectedSide === option.value ? "#fff" : "#000",
                 }}
               >
-                {option.icon} {option.label}
+                <Text>
+                  {option.icon} {option.label}
+                </Text>
               </Chip>
             ))}
           </View>

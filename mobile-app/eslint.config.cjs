@@ -35,6 +35,7 @@ module.exports = [
       "react/react-in-jsx-scope": "off",
       "react-native/no-inline-styles": "off",
       "@typescript-eslint/no-unused-vars": "warn",
+      "react-native/no-color-literals": "off",
     },
   },
   prettier,

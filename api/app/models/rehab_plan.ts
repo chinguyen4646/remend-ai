@@ -2,11 +2,14 @@ import { DateTime } from "luxon";
 import { BaseModel, column, belongsTo } from "@adonisjs/lucid/orm";
 import type { BelongsTo } from "@adonisjs/lucid/types/relations";
 import RehabLog from "#models/rehab_log";
+import UserOnboardingProfile from "#models/user_onboarding_profile";
 import type {
   ShortlistExercise,
   UserContextJson,
   AIOutputJson,
 } from "#services/ai/provider_interface";
+import type { PatternMappingResult } from "#services/exercises/pattern_mapper_service";
+import type { AIPatternInsight } from "#models/user_onboarding_profile";
 
 /**
  * Plan types for analytics tracking
@@ -25,6 +28,16 @@ export interface ShortlistJson {
   exercises: ShortlistExercise[];
 }
 
+/**
+ * Versioned AI context for initial onboarding plans
+ * Stores the AI pattern and deterministic mapping used to generate the plan
+ */
+export interface AIContextJson {
+  version: string; // e.g., "1.0"
+  pattern: AIPatternInsight;
+  mapping: PatternMappingResult;
+}
+
 // Re-export types for convenience
 export type { ShortlistExercise, UserContextJson, AIOutputJson };
 
@@ -33,7 +46,17 @@ export default class RehabPlan extends BaseModel {
   declare id: number;
 
   @column()
-  declare rehabLogId: number;
+  declare rehabLogId: number | null;
+
+  // Initial onboarding plan fields
+  @column()
+  declare isInitial: boolean;
+
+  @column()
+  declare onboardingProfileId: number | null;
+
+  @column()
+  declare aiContextJson: AIContextJson | null;
 
   @column()
   declare planType: PlanType;
@@ -66,4 +89,9 @@ export default class RehabPlan extends BaseModel {
     foreignKey: "rehabLogId",
   })
   declare log: BelongsTo<typeof RehabLog>;
+
+  @belongsTo(() => UserOnboardingProfile, {
+    foreignKey: "onboardingProfileId",
+  })
+  declare onboardingProfile: BelongsTo<typeof UserOnboardingProfile>;
 }

@@ -33,6 +33,7 @@ interface OnboardingStore {
   ) => void;
   setAggravatorsEasers: (aggravators: string[], easers: string[]) => void;
   submitOnboarding: () => Promise<OnboardingProfile>;
+  createInitialPlan: () => Promise<{ planId: number }>;
   clearError: () => void;
   reset: () => void;
 }
@@ -111,6 +112,25 @@ export const useOnboardingStore = create<OnboardingStore>()(
         } catch (err: any) {
           const errorMessage =
             err.response?.data?.errors?.[0]?.message || "Failed to submit onboarding";
+          set({ error: errorMessage, isLoading: false });
+          throw new Error(errorMessage);
+        }
+      },
+
+      createInitialPlan: async () => {
+        set({ isLoading: true, error: null });
+
+        try {
+          const response = await api.post<{ plan: { id: number } }>(
+            "/api/onboarding/create-initial-plan",
+          );
+
+          set({ isLoading: false });
+
+          return { planId: response.data.plan.id };
+        } catch (err: any) {
+          const errorMessage =
+            err.response?.data?.errors?.[0]?.message || "Failed to create initial plan";
           set({ error: errorMessage, isLoading: false });
           throw new Error(errorMessage);
         }

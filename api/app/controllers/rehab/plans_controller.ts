@@ -12,21 +12,32 @@ export default class PlansController {
     const planId = params.id;
 
     try {
-      const plan = await RehabPlan.query()
-        .where("id", planId)
-        .preload("log", (logQuery) => {
-          logQuery.preload("program");
-        })
-        .firstOrFail();
+      const plan = await RehabPlan.query().where("id", planId).firstOrFail();
 
-      // Verify ownership via log.userId
-      if (plan.log.userId !== user.id) {
-        return response.forbidden({
-          errors: [{ message: "Unauthorized" }],
+      // Handle ownership verification differently for initial vs regular plans
+      if (plan.isInitial) {
+        // Initial plans: verify ownership via onboarding profile
+        await plan.load("onboardingProfile");
+
+        if (plan.onboardingProfile.userId !== user.id) {
+          return response.forbidden({
+            errors: [{ message: "Unauthorized" }],
+          });
+        }
+      } else {
+        // Regular plans: verify ownership via log
+        await plan.load("log", (logQuery) => {
+          logQuery.preload("program");
         });
+
+        if (plan.log.userId !== user.id) {
+          return response.forbidden({
+            errors: [{ message: "Unauthorized" }],
+          });
+        }
       }
 
-      logger.info({ userId: user.id, planId }, "Rehab plan fetched");
+      logger.info({ userId: user.id, planId, isInitial: plan.isInitial }, "Rehab plan fetched");
 
       return response.ok({ plan });
     } catch (error) {

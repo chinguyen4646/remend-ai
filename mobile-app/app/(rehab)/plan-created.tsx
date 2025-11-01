@@ -8,10 +8,16 @@ import BaseLayout from "../../src/components/BaseLayout";
 
 export default function PlanCreatedScreen() {
   const router = useRouter();
-  const { planId, programId } = useLocalSearchParams<{ planId: string; programId?: string }>();
+  const { planId, programId, isInitial } = useLocalSearchParams<{
+    planId: string;
+    programId?: string;
+    isInitial?: string;
+  }>();
   const [plan, setPlan] = useState<RehabPlan | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const isInitialPlan = isInitial === "true";
 
   useEffect(() => {
     const fetchPlan = async () => {
@@ -35,7 +41,10 @@ export default function PlanCreatedScreen() {
   }, [planId]);
 
   const handleGoHome = () => {
-    if (programId) {
+    if (isInitialPlan) {
+      // Initial plans navigate to profile
+      router.replace("/profile");
+    } else if (programId) {
       router.replace(`/rehab-home?programId=${programId}`);
     } else {
       router.replace("/home");
@@ -75,10 +84,12 @@ export default function PlanCreatedScreen() {
         {/* Header */}
         <View className="mb-6">
           <Text variant="headlineMedium" className="font-bold mb-2">
-            Today&apos;s Plan
+            {isInitialPlan ? "Your Starting Plan" : "Today's Plan"}
           </Text>
           <Text variant="bodyLarge" className="text-gray-600">
-            Your personalized exercise plan is ready
+            {isInitialPlan
+              ? "Welcome! Here's your personalized starting plan"
+              : "Your personalized exercise plan is ready"}
           </Text>
         </View>
 
@@ -166,7 +177,7 @@ export default function PlanCreatedScreen() {
         {/* Action Button */}
         <View className="mb-4">
           <Button mode="contained" onPress={handleGoHome}>
-            <Text>Back!!</Text>
+            <Text>{isInitialPlan ? "Get Started!" : "Back to Home"}</Text>
           </Button>
         </View>
       </ScrollView>

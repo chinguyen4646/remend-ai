@@ -1,10 +1,12 @@
 import type { HttpContext } from "@adonisjs/core/http";
 import UserOnboardingProfile from "#models/user_onboarding_profile";
+import RehabPlan from "#models/rehab_plan";
 import { submitOnboardingValidator } from "#validators/onboarding";
 import logger from "@adonisjs/core/services/logger";
 import { DateTime } from "luxon";
 import aiConfig from "#config/ai";
 import aiProvider from "#services/ai/openai_provider";
+import InitialPlanService from "#services/exercises/initial_plan_service";
 
 export default class OnboardingController {
   /**
@@ -159,5 +161,131 @@ export default class OnboardingController {
         createdAt: profile.createdAt,
       },
     });
+  }
+
+  /**
+   * Create initial exercise plan from onboarding profile
+   * POST /api/onboarding/create-initial-plan
+   */
+  async createInitialPlan({ auth, response }: HttpContext) {
+    const user = auth.user!;
+
+    // Load current onboarding profile
+    await user.load("currentProfile");
+
+    if (!user.currentProfile) {
+      return response.notFound({
+        errors: [{ message: "No onboarding profile found. Complete onboarding first." }],
+      });
+    }
+
+    const profile = user.currentProfile;
+
+    // Validate AI pattern exists
+    if (!profile.aiPatternJson) {
+      return response.badRequest({
+        errors: [
+          {
+            message: "AI pattern analysis required to generate initial plan",
+          },
+        ],
+      });
+    }
+
+    // Check if initial plan already exists for this profile
+    const existingPlan = await RehabPlan.query()
+      .where("onboarding_profile_id", profile.id)
+      .where("is_initial", true)
+      .first();
+
+    if (existingPlan) {
+      logger.info(
+        {
+          userId: user.id,
+          profileId: profile.id,
+          planId: existingPlan.id,
+        },
+        "Initial plan already exists, returning existing plan",
+      );
+
+      return response.ok({
+        plan: {
+          id: existingPlan.id,
+          shortlistJson: existingPlan.shortlistJson,
+          aiContextJson: existingPlan.aiContextJson,
+          createdAt: existingPlan.createdAt,
+        },
+      });
+    }
+
+    try {
+      // Generate initial plan using InitialPlanService
+      const planService = new InitialPlanService();
+      const { exercises, mappingResult } = await planService.generateInitialPlan(profile);
+
+      // Build versioned AI context
+      const aiContextJson = {
+        version: "1.0",
+        pattern: profile.aiPatternJson,
+        mapping: mappingResult,
+      };
+
+      // Create RehabPlan record
+      const plan = await RehabPlan.create({
+        rehabLogId: null, // No log for initial plans
+        isInitial: true,
+        onboardingProfileId: profile.id,
+        planType: "ai", // Generated from AI pattern analysis
+        shortlistJson: { exercises },
+        aiOutputJson: null, // Initial plans don't use AI formatting
+        aiStatus: "skipped", // No AI formatting needed
+        aiError: null,
+        aiContextJson,
+        userContextJson: {
+          area: profile.data.area,
+          date: DateTime.now().toISODate()!,
+        },
+        generatedAt: DateTime.now(),
+      });
+
+      logger.info(
+        {
+          userId: user.id,
+          profileId: profile.id,
+          planId: plan.id,
+          buckets: mappingResult.buckets,
+          exerciseCount: exercises.length,
+          confidence: mappingResult.confidenceLevel,
+        },
+        "Initial plan created from onboarding",
+      );
+
+      return response.created({
+        plan: {
+          id: plan.id,
+          shortlistJson: plan.shortlistJson,
+          aiContextJson: plan.aiContextJson,
+          createdAt: plan.createdAt,
+        },
+      });
+    } catch (error) {
+      logger.error(
+        {
+          userId: user.id,
+          profileId: profile.id,
+          error: error.message,
+          stack: error.stack,
+        },
+        "Failed to create initial plan",
+      );
+
+      return response.internalServerError({
+        errors: [
+          {
+            message: "Failed to generate initial exercise plan. Please try again.",
+          },
+        ],
+      });
+    }
   }
 }
