@@ -8,6 +8,8 @@ import logger from "@adonisjs/core/services/logger";
 import { DateTime } from "luxon";
 import ShortlistService from "#services/exercises/shortlist_service";
 import openaiProvider from "#services/ai/openai_provider";
+import ProgressionService from "#services/exercises/progression_service";
+import PlanFeedbackFormatter from "#services/ai/plan_feedback_formatter";
 
 export default class LogsController {
   async create({ auth, request, response }: HttpContext) {
@@ -80,73 +82,177 @@ export default class LogsController {
 
   /**
    * Generate exercise plan for a rehab log
+   * Supports both initial plans and adaptive progression
    */
   private async generatePlan(log: RehabLog, program: RehabProgram): Promise<RehabPlan> {
-    const shortlistService = new ShortlistService();
+    const progressionService = new ProgressionService();
 
     try {
-      // Generate shortlist
-      const shortlist = await shortlistService.generateShortlist(log, program);
+      // Check if progression should be triggered
+      const progressionTrigger = await progressionService.shouldTriggerProgression(program.id);
 
-      if (shortlist.length === 0) {
-        logger.warn({ logId: log.id }, "No exercises found for shortlist");
-        throw new Error("No exercises available");
+      if (progressionTrigger.shouldProgress) {
+        // Generate adaptive plan
+        return await this.generateAdaptivePlan(log, program, progressionService);
+      } else {
+        // Generate regular plan (existing flow)
+        logger.info(
+          { logId: log.id, reason: progressionTrigger.reason },
+          "Progression not triggered - using regular plan generation",
+        );
+        return await this.generateRegularPlan(log, program);
       }
-
-      // Build user context
-      const userContext = {
-        notes: log.notes || "",
-        aggravators: log.aggravators,
-        trend_summary: "First log entry", // TODO: Calculate actual trend
-      };
-
-      // Format with AI
-      let aiOutput = null;
-      let aiStatus: "success" | "failed" = "success";
-      let aiError: string | null = null;
-
-      try {
-        aiOutput = await openaiProvider.formatExercisePlan(shortlist, userContext);
-      } catch (error) {
-        logger.error({ logId: log.id, error: error.message }, "AI formatting failed");
-        aiStatus = "failed";
-        aiError = error.message;
-
-        // Generate fallback plan
-        aiOutput = {
-          summary:
-            userContext.trend_summary === "First log entry"
-              ? "Great job starting your rehab journey! Here's your plan for today."
-              : `Your pain trend: ${userContext.trend_summary}. Here's your personalized plan.`,
-          bullets: shortlist.map((ex) => ({
-            exercise_id: ex.id,
-            exercise_name: ex.name,
-            dosage_text: ex.dosage_text,
-            coaching: "Focus on proper form and listen to your body.",
-          })),
-          caution: undefined,
-        };
-      }
-
-      // Save plan
-      const plan = await RehabPlan.create({
-        rehabLogId: log.id,
-        planType: aiStatus === "success" ? "ai" : "fallback",
-        shortlistJson: { exercises: shortlist },
-        aiOutputJson: aiOutput,
-        aiStatus,
-        aiError,
-        userContextJson: userContext,
-        generatedAt: DateTime.now(),
-      });
-
-      logger.info({ logId: log.id, planId: plan.id, aiStatus }, "Exercise plan generated");
-
-      return plan;
     } catch (error) {
       logger.error({ logId: log.id, error: error.message }, "Plan generation failed");
       throw error;
     }
+  }
+
+  /**
+   * Generate regular plan using existing ShortlistService flow
+   */
+  private async generateRegularPlan(log: RehabLog, program: RehabProgram): Promise<RehabPlan> {
+    const shortlistService = new ShortlistService();
+
+    // Generate shortlist
+    const shortlist = await shortlistService.generateShortlist(log, program);
+
+    if (shortlist.length === 0) {
+      logger.warn({ logId: log.id }, "No exercises found for shortlist");
+      throw new Error("No exercises available");
+    }
+
+    // Build user context
+    const userContext = {
+      notes: log.notes || "",
+      aggravators: log.aggravators,
+      trend_summary: "First log entry",
+    };
+
+    // Format with AI
+    let aiOutput = null;
+    let aiStatus: "success" | "failed" = "success";
+    let aiError: string | null = null;
+
+    try {
+      aiOutput = await openaiProvider.formatExercisePlan(shortlist, userContext);
+    } catch (error) {
+      logger.error({ logId: log.id, error: error.message }, "AI formatting failed");
+      aiStatus = "failed";
+      aiError = error.message;
+
+      // Generate fallback plan
+      aiOutput = {
+        summary: "Great job starting your rehab journey! Here's your plan for today.",
+        bullets: shortlist.map((ex) => ({
+          exercise_id: ex.id,
+          exercise_name: ex.name,
+          dosage_text: ex.dosage_text,
+          coaching: "Focus on proper form and listen to your body.",
+        })),
+        caution: undefined,
+      };
+    }
+
+    // Save plan
+    const plan = await RehabPlan.create({
+      rehabLogId: log.id,
+      isInitial: false,
+      planType: aiStatus === "success" ? "ai" : "fallback",
+      shortlistJson: { exercises: shortlist },
+      aiOutputJson: aiOutput,
+      aiStatus,
+      aiError,
+      userContextJson: userContext,
+      generatedAt: DateTime.now(),
+    });
+
+    logger.info({ logId: log.id, planId: plan.id, aiStatus }, "Regular plan generated");
+
+    return plan;
+  }
+
+  /**
+   * Generate adaptive plan using ProgressionService
+   */
+  private async generateAdaptivePlan(
+    log: RehabLog,
+    program: RehabProgram,
+    progressionService: ProgressionService,
+  ): Promise<RehabPlan> {
+    // Analyze trend
+    const trendAnalysis = await progressionService.analyzeTrend(program.id);
+
+    if (!trendAnalysis) {
+      logger.warn({ logId: log.id }, "No trend data available - falling back to regular plan");
+      return await this.generateRegularPlan(log, program);
+    }
+
+    // Get latest plan as parent
+    const parentPlan = await RehabPlan.query()
+      .whereHas("log", (logQuery) => {
+        logQuery.where("program_id", program.id);
+      })
+      .orderBy("generated_at", "desc")
+      .first();
+
+    if (!parentPlan) {
+      logger.warn({ logId: log.id }, "No parent plan found - falling back to regular plan");
+      return await this.generateRegularPlan(log, program);
+    }
+
+    // Progress plan based on trend
+    const progressionResult = await progressionService.progressPlan(
+      parentPlan,
+      trendAnalysis.trend,
+    );
+
+    // Generate AI feedback
+    const feedbackFormatter = new PlanFeedbackFormatter();
+    const aiFeedback = await feedbackFormatter.generateFeedback({
+      trend: trendAnalysis.trend,
+      trendAnalysis,
+      exerciseCount: progressionResult.exercises.length,
+      buckets: progressionResult.buckets,
+      userNotes: log.notes || undefined,
+    });
+
+    // Build user context
+    const userContext = {
+      notes: log.notes || "",
+      aggravators: log.aggravators,
+      trend_summary: `Your trend: ${trendAnalysis.trend} (pain: ${trendAnalysis.painDelta.toFixed(1)}, stiffness: ${trendAnalysis.stiffnessDelta.toFixed(1)})`,
+    };
+
+    // Save adaptive plan
+    const plan = await RehabPlan.create({
+      rehabLogId: log.id,
+      isInitial: false,
+      parentPlanId: parentPlan.id,
+      trend: trendAnalysis.trend,
+      aiFeedbackJson: aiFeedback,
+      planType: "ai", // Progression is deterministic, feedback is AI
+      shortlistJson: { exercises: progressionResult.exercises },
+      aiOutputJson: null, // Adaptive plans use ai_feedback_json instead
+      aiStatus: "skipped",
+      aiError: null,
+      userContextJson: userContext,
+      generatedAt: DateTime.now(),
+    });
+
+    logger.info(
+      {
+        logId: log.id,
+        planId: plan.id,
+        parentPlanId: parentPlan.id,
+        trend: trendAnalysis.trend,
+        painDelta: trendAnalysis.painDelta.toFixed(1),
+        stiffnessDelta: trendAnalysis.stiffnessDelta.toFixed(1),
+      },
+      "Adaptive plan generated with progression",
+    );
+
+    return plan;
   }
 
   async index({ auth, request, response }: HttpContext) {

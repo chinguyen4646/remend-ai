@@ -129,6 +129,44 @@ export default function RehabHomeScreen() {
           </View>
         </View>
 
+        {/* Adaptive Plan Progress Banner */}
+        {latestPlan && latestPlan.trend && latestPlan.aiFeedbackJson && (
+          <Card
+            className="mb-4"
+            mode="elevated"
+            style={{
+              backgroundColor:
+                latestPlan.trend === "improving"
+                  ? "#d1fae5"
+                  : latestPlan.trend === "worse"
+                    ? "#fee2e2"
+                    : "#e0e7ff",
+            }}
+          >
+            <Card.Content>
+              <View className="flex-row items-center gap-2 mb-2">
+                <Text variant="titleMedium" className="font-bold">
+                  {latestPlan.trend === "improving"
+                    ? "🎉 Great Progress!"
+                    : latestPlan.trend === "worse"
+                      ? "⚠️ Adjusted Plan"
+                      : "📊 Steady Progress"}
+                </Text>
+              </View>
+              <Text variant="bodyMedium" className="mb-3">
+                {latestPlan.aiFeedbackJson.summary}
+              </Text>
+              {latestPlan.aiFeedbackJson.caution && (
+                <View className="bg-amber-100 border border-amber-300 rounded-lg p-3 mb-3">
+                  <Text variant="bodySmall" className="text-amber-900">
+                    ⚠️ {latestPlan.aiFeedbackJson.caution}
+                  </Text>
+                </View>
+              )}
+            </Card.Content>
+          </Card>
+        )}
+
         {/* Today's Plan Card */}
         {latestPlan && (
           <Card className="mb-4" mode="elevated">
@@ -144,7 +182,7 @@ export default function RehabHomeScreen() {
                     style={{ backgroundColor: "#d1fae5" }}
                     compact
                   >
-                    🟢 New
+                    <Text>🟢 New</Text>
                   </Chip>
                 )}
               </View>
@@ -184,7 +222,7 @@ export default function RehabHomeScreen() {
           <Card className="mb-4" mode="elevated">
             <Card.Content>
               <Text variant="titleLarge" className="font-bold mb-2">
-                Log today's progress
+                Log today&apos;s progress
               </Text>
               <Text variant="bodyMedium" className="text-gray-600 mb-4">
                 Track your progress to stay on top of your recovery

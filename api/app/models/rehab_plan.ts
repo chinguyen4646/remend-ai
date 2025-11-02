@@ -38,6 +38,21 @@ export interface AIContextJson {
   mapping: PatternMappingResult;
 }
 
+/**
+ * AI-generated coaching feedback for adaptive plans
+ * Created by GPT-4o-mini for empathetic user guidance
+ */
+export interface AIFeedbackJson {
+  summary: string; // 1-2 sentence progress summary
+  coaching: string[]; // Array of coaching tips
+  caution: string | null; // Warning for worse trend, else null
+}
+
+/**
+ * Trend classification for adaptive plans
+ */
+export type Trend = "improving" | "stable" | "worse";
+
 // Re-export types for convenience
 export type { ShortlistExercise, UserContextJson, AIOutputJson };
 
@@ -85,6 +100,16 @@ export default class RehabPlan extends BaseModel {
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime;
 
+  // Adaptive progression fields
+  @column()
+  declare parentPlanId: number | null;
+
+  @column()
+  declare trend: Trend | null;
+
+  @column()
+  declare aiFeedbackJson: AIFeedbackJson | null;
+
   @belongsTo(() => RehabLog, {
     foreignKey: "rehabLogId",
   })
@@ -94,4 +119,9 @@ export default class RehabPlan extends BaseModel {
     foreignKey: "onboardingProfileId",
   })
   declare onboardingProfile: BelongsTo<typeof UserOnboardingProfile>;
+
+  @belongsTo(() => RehabPlan, {
+    foreignKey: "parentPlanId",
+  })
+  declare parentPlan: BelongsTo<typeof RehabPlan>;
 }
