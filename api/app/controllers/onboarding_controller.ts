@@ -1,9 +1,12 @@
 import type { HttpContext } from "@adonisjs/core/http";
 import UserOnboardingProfile from "#models/user_onboarding_profile";
 import RehabPlan from "#models/rehab_plan";
+import RehabLog from "#models/rehab_log";
+import RehabProgram from "#models/rehab_program";
 import { submitOnboardingValidator } from "#validators/onboarding";
 import logger from "@adonisjs/core/services/logger";
 import { DateTime } from "luxon";
+import { todayInTimezone } from "#utils/dates";
 import aiConfig from "#config/ai";
 import aiProvider from "#services/ai/openai_provider";
 import InitialPlanService from "#services/exercises/initial_plan_service";
@@ -166,6 +169,8 @@ export default class OnboardingController {
   /**
    * Create initial exercise plan from onboarding profile
    * POST /api/onboarding/create-initial-plan
+   *
+   * Creates Day 1 log + links initial plan (continuity update)
    */
   async createInitialPlan({ auth, response }: HttpContext) {
     const user = auth.user!;
@@ -192,33 +197,81 @@ export default class OnboardingController {
       });
     }
 
-    // Check if initial plan already exists for this profile
-    const existingPlan = await RehabPlan.query()
-      .where("onboarding_profile_id", profile.id)
-      .where("is_initial", true)
+    // Find user's active rehab program
+    const program = await RehabProgram.query()
+      .where("user_id", user.id)
+      .where("status", "active")
+      .orderBy("created_at", "desc")
       .first();
 
-    if (existingPlan) {
+    if (!program) {
+      return response.notFound({
+        errors: [{ message: "No active rehab program found. Please create a program first." }],
+      });
+    }
+
+    // IDEMPOTENCY CHECK: Check if onboarding log already exists
+    const existingLog = await RehabLog.query()
+      .where("program_id", program.id)
+      .where("is_onboarding", true)
+      .first();
+
+    if (existingLog) {
+      // Load the plan for this log
+      await existingLog.load("plan");
+
       logger.info(
         {
           userId: user.id,
           profileId: profile.id,
-          planId: existingPlan.id,
+          logId: existingLog.id,
+          planId: existingLog.plan?.id,
         },
-        "Initial plan already exists, returning existing plan",
+        "Onboarding log already exists, returning existing log/plan",
       );
 
       return response.ok({
-        plan: {
-          id: existingPlan.id,
-          shortlistJson: existingPlan.shortlistJson,
-          aiContextJson: existingPlan.aiContextJson,
-          createdAt: existingPlan.createdAt,
-        },
+        log: existingLog,
+        plan: existingLog.plan,
       });
     }
 
     try {
+      // Get today's date in user's timezone
+      const logDate = todayInTimezone(user.tz);
+
+      // Create onboarding log using onboarding data
+      const painAverage = Math.round((profile.data.painRest + profile.data.painActivity) / 2);
+
+      // Build contextual notes
+      const redFlagsText = profile.data.redFlags?.length
+        ? profile.data.redFlags.join(", ")
+        : "none";
+      const notesText = `Pain described: ${profile.userDescription}. Onset: ${profile.data.onset}. Red flags: ${redFlagsText}.`;
+
+      const log = await RehabLog.create({
+        userId: user.id,
+        programId: program.id,
+        date: DateTime.fromISO(logDate),
+        pain: painAverage,
+        stiffness: profile.data.stiffness,
+        swelling: null,
+        activityLevel: null,
+        notes: notesText,
+        aggravators: profile.data.aggravators || [],
+        isOnboarding: true,
+      });
+
+      logger.info(
+        {
+          userId: user.id,
+          profileId: profile.id,
+          logId: log.id,
+          date: logDate,
+        },
+        "Onboarding log created (Day 1)",
+      );
+
       // Generate initial plan using InitialPlanService
       const planService = new InitialPlanService();
       const { exercises, mappingResult } = await planService.generateInitialPlan(profile);
@@ -230,43 +283,62 @@ export default class OnboardingController {
         mapping: mappingResult,
       };
 
-      // Create RehabPlan record
-      const plan = await RehabPlan.create({
-        rehabLogId: null, // No log for initial plans
-        isInitial: true,
-        onboardingProfileId: profile.id,
-        planType: "ai", // Generated from AI pattern analysis
-        shortlistJson: { exercises },
-        aiOutputJson: null, // Initial plans don't use AI formatting
-        aiStatus: "skipped", // No AI formatting needed
-        aiError: null,
-        aiContextJson,
-        userContextJson: {
-          area: profile.data.area,
-          date: DateTime.now().toISODate()!,
-        },
-        generatedAt: DateTime.now(),
-      });
+      // Check if initial plan already exists for this profile (from previous implementation)
+      let plan = await RehabPlan.query()
+        .where("onboarding_profile_id", profile.id)
+        .where("is_initial", true)
+        .first();
 
-      logger.info(
-        {
-          userId: user.id,
-          profileId: profile.id,
-          planId: plan.id,
-          buckets: mappingResult.buckets,
-          exerciseCount: exercises.length,
-          confidence: mappingResult.confidenceLevel,
-        },
-        "Initial plan created from onboarding",
-      );
+      if (plan) {
+        // Update existing plan with log ID
+        plan.rehabLogId = log.id;
+        await plan.save();
+
+        logger.info(
+          {
+            userId: user.id,
+            profileId: profile.id,
+            planId: plan.id,
+            logId: log.id,
+          },
+          "Linked existing initial plan to onboarding log",
+        );
+      } else {
+        // Create new plan linked to log
+        plan = await RehabPlan.create({
+          rehabLogId: log.id,
+          isInitial: true,
+          onboardingProfileId: profile.id,
+          planType: "ai", // Generated from AI pattern analysis
+          shortlistJson: { exercises },
+          aiOutputJson: null, // Initial plans don't use AI formatting
+          aiStatus: "skipped", // No AI formatting needed
+          aiError: null,
+          aiContextJson,
+          userContextJson: {
+            area: profile.data.area,
+            date: logDate,
+          },
+          generatedAt: DateTime.now(),
+        });
+
+        logger.info(
+          {
+            userId: user.id,
+            profileId: profile.id,
+            planId: plan.id,
+            logId: log.id,
+            buckets: mappingResult.buckets,
+            exerciseCount: exercises.length,
+            confidence: mappingResult.confidenceLevel,
+          },
+          "Initial plan created and linked to onboarding log",
+        );
+      }
 
       return response.created({
-        plan: {
-          id: plan.id,
-          shortlistJson: plan.shortlistJson,
-          aiContextJson: plan.aiContextJson,
-          createdAt: plan.createdAt,
-        },
+        log,
+        plan,
       });
     } catch (error) {
       logger.error(
@@ -276,7 +348,7 @@ export default class OnboardingController {
           error: error.message,
           stack: error.stack,
         },
-        "Failed to create initial plan",
+        "Failed to create onboarding log/plan",
       );
 
       return response.internalServerError({

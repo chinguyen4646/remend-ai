@@ -51,6 +51,9 @@ export default class RehabLog extends BaseModel {
   })
   declare aggravators: string[];
 
+  @column()
+  declare isOnboarding: boolean;
+
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime;
 

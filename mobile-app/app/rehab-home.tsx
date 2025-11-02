@@ -14,6 +14,7 @@ export default function RehabHomeScreen() {
   const { logs, hasLoggedToday, loadLogs, isLoading: logsLoading } = useRehabLogStore();
   const router = useRouter();
   const [program, setProgram] = useState<RehabProgram | null>(null);
+  const [latestPlan, setLatestPlan] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -27,8 +28,9 @@ export default function RehabHomeScreen() {
 
     try {
       setError(null);
-      const response = await rehabApi.getProgram(Number(programId));
+      const response = await rehabApi.getProgram(Number(programId), { include: "latestPlan" });
       setProgram(response.program);
+      setLatestPlan(response.latestPlan || null);
       // Load logs for this program
       await loadLogs(Number(programId));
     } catch (err: unknown) {
@@ -126,6 +128,58 @@ export default function RehabHomeScreen() {
             </View>
           </View>
         </View>
+
+        {/* Today's Plan Card */}
+        {latestPlan && (
+          <Card className="mb-4" mode="elevated">
+            <Card.Content>
+              <View className="flex-row justify-between items-start mb-3">
+                <Text variant="titleLarge" className="font-bold">
+                  {latestPlan.isInitial ? "Your Starting Plan" : "Today's Plan"}
+                </Text>
+                {latestPlan.isInitial && (
+                  <Chip
+                    mode="flat"
+                    textStyle={{ color: "#10b981", fontSize: 12 }}
+                    style={{ backgroundColor: "#d1fae5" }}
+                    compact
+                  >
+                    🟢 New
+                  </Chip>
+                )}
+              </View>
+
+              {/* Exercise List */}
+              <View className="mb-4">
+                {latestPlan.shortlistJson?.exercises
+                  ?.slice(0, 4)
+                  .map((exercise: any, idx: number) => (
+                    <View key={idx} className="mb-2">
+                      <Text variant="bodyMedium" className="font-semibold">
+                        {idx + 1}. {exercise.name}
+                      </Text>
+                      <Text variant="bodySmall" className="text-indigo-600">
+                        {exercise.dosage_text}
+                      </Text>
+                    </View>
+                  ))}
+              </View>
+
+              <Button
+                mode="outlined"
+                onPress={() =>
+                  router.push(
+                    `/(rehab)/plan-created?planId=${latestPlan.id}&programId=${program.id}`,
+                  )
+                }
+                compact
+              >
+                <Text>View Todays Plan →</Text>
+              </Button>
+            </Card.Content>
+          </Card>
+        )}
+
         {program.status === "active" && !hasLoggedToday && (
           <Card className="mb-4" mode="elevated">
             <Card.Content>

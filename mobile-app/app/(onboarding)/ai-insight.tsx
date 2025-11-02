@@ -62,11 +62,18 @@ export default function AIInsightScreen() {
         // startDate defaults to today on the backend
       });
 
-      // Create initial exercise plan from onboarding
-      const { planId } = await createInitialPlan();
+      // Create initial exercise plan + Day 1 log from onboarding
+      await createInitialPlan();
 
-      // Navigate to plan-created screen with initial plan
-      router.replace(`/(rehab)/plan-created?planId=${planId}&isInitial=true`);
+      // Navigate to rehab-home to see plan + log
+      // Get programId from active program (just created)
+      const programId = useRehabProgramStore.getState().activeProgram?.id;
+
+      if (!programId) {
+        throw new Error("Program ID not found after creation");
+      }
+
+      router.replace(`/rehab-home?programId=${programId}`);
     } catch (err) {
       console.error("Program/plan creation error:", err);
       setIsCreatingProgram(false);

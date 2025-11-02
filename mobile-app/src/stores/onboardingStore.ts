@@ -33,7 +33,7 @@ interface OnboardingStore {
   ) => void;
   setAggravatorsEasers: (aggravators: string[], easers: string[]) => void;
   submitOnboarding: () => Promise<OnboardingProfile>;
-  createInitialPlan: () => Promise<{ planId: number }>;
+  createInitialPlan: () => Promise<{ log: any; plan: any }>;
   clearError: () => void;
   reset: () => void;
 }
@@ -121,13 +121,16 @@ export const useOnboardingStore = create<OnboardingStore>()(
         set({ isLoading: true, error: null });
 
         try {
-          const response = await api.post<{ plan: { id: number } }>(
+          const response = await api.post<{ log: any; plan: any }>(
             "/api/onboarding/create-initial-plan",
           );
 
           set({ isLoading: false });
 
-          return { planId: response.data.plan.id };
+          return {
+            log: response.data.log,
+            plan: response.data.plan,
+          };
         } catch (err: any) {
           const errorMessage =
             err.response?.data?.errors?.[0]?.message || "Failed to create initial plan";

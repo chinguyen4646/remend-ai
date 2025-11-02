@@ -1,5 +1,6 @@
 import type { HttpContext } from "@adonisjs/core/http";
 import RehabProgram from "#models/rehab_program";
+import RehabPlan from "#models/rehab_plan";
 import { createProgramValidator, updateProgramStatusValidator } from "#validators/rehab/program";
 import { toUtcStartOfLocalDay, todayUtcFromLocal, isValidIsoDate } from "#utils/dates";
 
@@ -33,8 +34,26 @@ export default class ProgramsController {
         .first();
 
       if (existingActive) {
+        // If the existing program matches the requested area/side, return it (idempotent)
+        if (
+          existingActive.area === data.area &&
+          existingActive.side === data.side &&
+          existingActive.areaOtherLabel === (data.areaOtherLabel || null)
+        ) {
+          logger.info(
+            { userId: user.id, programId: existingActive.id },
+            "Returning existing active program (idempotent)",
+          );
+          return response.ok({ program: existingActive });
+        }
+
+        // Different area/side - true conflict
         return response.conflict({
-          errors: [{ message: "You already have an active rehab program" }],
+          errors: [
+            {
+              message: `You already have an active ${existingActive.area} program. Please complete or pause it first.`,
+            },
+          ],
         });
       }
     }
@@ -139,7 +158,7 @@ export default class ProgramsController {
     return response.ok({ programs });
   }
 
-  async show({ auth, response, params }: HttpContext) {
+  async show({ auth, response, params, request }: HttpContext) {
     const user = auth.user!;
 
     const program = await RehabProgram.find(params.id);
@@ -150,6 +169,31 @@ export default class ProgramsController {
 
     if (program.userId !== user.id) {
       return response.forbidden({ errors: [{ message: "Unauthorized" }] });
+    }
+
+    // Check if ?include=latestPlan is requested
+    const includeParam = request.qs().include;
+    const includeLatestPlan = includeParam?.includes("latestPlan");
+
+    if (includeLatestPlan) {
+      // Fetch latest plan for this program
+      // This includes both initial plans (via onboarding) and regular plans (via logs)
+      const latestPlan = await RehabPlan.query()
+        .where((query) => {
+          query
+            .whereHas("log", (logQuery) => {
+              logQuery.where("program_id", program.id);
+            })
+            .orWhere((orQuery) => {
+              orQuery.where("is_initial", true).whereHas("onboardingProfile", (profileQuery) => {
+                profileQuery.where("user_id", user.id);
+              });
+            });
+        })
+        .orderBy("generated_at", "desc")
+        .first();
+
+      return response.ok({ program, latestPlan });
     }
 
     return response.ok({ program });
