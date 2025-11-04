@@ -7,6 +7,7 @@ import { rehabApi } from "../src/api/rehab";
 import type { RehabProgram } from "../src/types/rehab";
 import BaseLayout from "../src/components/BaseLayout";
 import Sparkline from "../src/components/Sparkline";
+import WeeklyTrendChart from "../src/components/WeeklyTrendChart";
 import { formatCalendarDate } from "../src/utils/dates";
 
 export default function RehabHomeScreen() {
@@ -15,6 +16,7 @@ export default function RehabHomeScreen() {
   const router = useRouter();
   const [program, setProgram] = useState<RehabProgram | null>(null);
   const [latestPlan, setLatestPlan] = useState<any>(null);
+  const [summary, setSummary] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -41,8 +43,21 @@ export default function RehabHomeScreen() {
     }
   };
 
+  const fetchSummary = async () => {
+    if (!programId) return;
+
+    try {
+      const summaryData = await rehabApi.getProgramSummary(Number(programId));
+      setSummary(summaryData);
+    } catch (err: unknown) {
+      console.error("Failed to load summary:", err);
+      // Don't set error - summary is optional
+    }
+  };
+
   useEffect(() => {
     fetchProgram();
+    fetchSummary();
   }, [programId]);
 
   // Reload logs when screen comes into focus (e.g., after creating a log)
@@ -56,7 +71,7 @@ export default function RehabHomeScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchProgram();
+    await Promise.all([fetchProgram(), fetchSummary()]);
   };
 
   const handleLogToday = () => {
@@ -216,6 +231,135 @@ export default function RehabHomeScreen() {
               </Button>
             </Card.Content>
           </Card>
+        )}
+
+        {/* Progress Summary Section */}
+        {summary && (
+          <View className="mb-4">
+            <Text variant="headlineSmall" className="font-bold mb-3">
+              Your Progress
+            </Text>
+
+            {/* Streak Card */}
+            <Card className="mb-3" mode="elevated">
+              <Card.Content>
+                <View className="flex-row items-center justify-between mb-3">
+                  <View className="flex-1">
+                    <Text variant="titleLarge" className="font-bold">
+                      🔥 {summary.adherence.currentStreak}-day streak
+                    </Text>
+                    <Text variant="bodyMedium" className="text-gray-600">
+                      {Math.round(summary.adherence.adherenceRate * 100)}% adherence
+                    </Text>
+                  </View>
+                  <View className="items-end">
+                    <Text variant="bodySmall" className="text-gray-500">
+                      Best: {summary.adherence.longestStreak} days
+                    </Text>
+                  </View>
+                </View>
+                {/* Progress bar */}
+                <View className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <View
+                    className="h-full bg-indigo-600 rounded-full"
+                    style={{ width: `${summary.adherence.adherenceRate * 100}%` }}
+                  />
+                </View>
+              </Card.Content>
+            </Card>
+
+            {/* Weekly Trend Chart Card */}
+            {summary.chartData?.days && summary.chartData.days.length > 0 && (
+              <Card className="mb-3" mode="elevated">
+                <Card.Content>
+                  <Text variant="titleMedium" className="font-bold mb-3">
+                    📈 This Week
+                  </Text>
+                  <WeeklyTrendChart data={summary.chartData.days} />
+                  {/* Show avg changes */}
+                  <View className="flex-row gap-3 mt-3">
+                    <Text variant="bodySmall" className="text-gray-600">
+                      Pain: {summary.chartData.avgPainChange > 0 ? "+" : ""}
+                      {summary.chartData.avgPainChange.toFixed(1)}
+                    </Text>
+                    <Text variant="bodySmall" className="text-gray-600">
+                      Stiffness: {summary.chartData.avgStiffnessChange > 0 ? "+" : ""}
+                      {summary.chartData.avgStiffnessChange.toFixed(1)}
+                    </Text>
+                  </View>
+                </Card.Content>
+              </Card>
+            )}
+
+            {/* Weekly Summary Card (GPT feedback) */}
+            {summary.weeklySummary && (
+              <Card className="mb-3" mode="elevated" style={{ backgroundColor: "#f0f9ff" }}>
+                <Card.Content>
+                  <Text variant="titleMedium" className="font-bold mb-2">
+                    {summary.weeklySummary.emoji} Weekly Insight
+                  </Text>
+                  <Text variant="bodyMedium" className="mb-3">
+                    {summary.weeklySummary.summary}
+                  </Text>
+                  {summary.weeklySummary.highlights?.map((highlight: string, idx: number) => (
+                    <Text key={idx} variant="bodySmall" className="mb-1 text-gray-700">
+                      • {highlight}
+                    </Text>
+                  ))}
+                  <Text variant="bodySmall" className="text-indigo-700 mt-2 italic">
+                    {summary.weeklySummary.encouragement}
+                  </Text>
+                </Card.Content>
+              </Card>
+            )}
+
+            {/* Celebration Banner (5+ day streak) */}
+            {summary.adherence.currentStreak >= 5 && (
+              <Card className="mb-3" mode="elevated" style={{ backgroundColor: "#d1fae5" }}>
+                <Card.Content>
+                  <Text variant="bodyMedium" className="text-green-800 font-semibold">
+                    🔥 You&apos;re on fire! {summary.adherence.currentStreak}-day streak achieved.
+                  </Text>
+                </Card.Content>
+              </Card>
+            )}
+
+            {/* Re-engagement Banner (2+ days since last log) */}
+            {summary.adherence.lastLoggedAt &&
+              (() => {
+                const daysSince = Math.floor(
+                  (Date.now() - new Date(summary.adherence.lastLoggedAt).getTime()) /
+                    (1000 * 60 * 60 * 24),
+                );
+                return (
+                  daysSince >= 2 && (
+                    <Card className="mb-3" mode="elevated" style={{ backgroundColor: "#fef3c7" }}>
+                      <Card.Content>
+                        <View className="flex-row items-center gap-2 mb-2">
+                          <Text variant="titleMedium">👋</Text>
+                          <View className="flex-1">
+                            <Text variant="bodyMedium" className="font-semibold">
+                              Let&apos;s do a quick check-in today
+                            </Text>
+                            <Text variant="bodySmall" className="text-gray-600">
+                              Keep your {summary.adherence.currentStreak}-day streak alive!
+                            </Text>
+                          </View>
+                        </View>
+                        <Button
+                          mode="contained"
+                          onPress={handleLogToday}
+                          compact
+                          style={{ backgroundColor: "#f59e0b" }}
+                        >
+                          <Text>Log Progress</Text>
+                        </Button>
+                      </Card.Content>
+                    </Card>
+                  )
+                );
+              })()}
+          </View>
         )}
 
         {program.status === "active" && !hasLoggedToday && (

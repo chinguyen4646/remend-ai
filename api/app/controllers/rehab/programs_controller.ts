@@ -1,10 +1,14 @@
 import type { HttpContext } from "@adonisjs/core/http";
 import RehabProgram from "#models/rehab_program";
 import RehabPlan from "#models/rehab_plan";
+import RehabLog from "#models/rehab_log";
 import { createProgramValidator, updateProgramStatusValidator } from "#validators/rehab/program";
 import { toUtcStartOfLocalDay, todayUtcFromLocal, isValidIsoDate } from "#utils/dates";
+import { DateTime } from "luxon";
 
 import logger from "@adonisjs/core/services/logger";
+import AdherenceService from "#services/rehab/adherence_service";
+import WeeklySummaryFormatter from "#services/ai/weekly_summary_formatter";
 
 export default class ProgramsController {
   async create({ auth, request, response }: HttpContext) {
@@ -197,5 +201,148 @@ export default class ProgramsController {
     }
 
     return response.ok({ program });
+  }
+
+  /**
+   * Get program summary with adherence, weekly data, and chart data
+   * GET /api/rehab-programs/:id/summary
+   *
+   * Auto-generates weekly summary if 7+ days stale
+   */
+  async getSummary({ auth, params, response }: HttpContext) {
+    const user = auth.user!;
+
+    const program = await RehabProgram.find(params.id);
+
+    if (!program) {
+      return response.notFound({ errors: [{ message: "Program not found" }] });
+    }
+
+    if (program.userId !== user.id) {
+      return response.forbidden({ errors: [{ message: "Unauthorized" }] });
+    }
+
+    const adherenceService = new AdherenceService();
+
+    // Auto-generate summary if stale (7+ days)
+    if (adherenceService.shouldGenerateWeeklySummary(program)) {
+      await this.generateWeeklySummary(program);
+      await program.refresh(); // Reload updated data
+    }
+
+    // Get adherence stats
+    const adherence = await adherenceService.calculateAdherence(program.id);
+
+    // Get weekly chart data (last 7 calendar days)
+    const chartData = await this.getWeeklyChartData(program.id);
+
+    // Get weekly summary data for additional context
+    const weeklyData = await adherenceService.getLastWeekSummary(program.id);
+
+    return response.ok({
+      adherence: {
+        daysLogged: adherence.daysLogged,
+        totalDays: adherence.totalDays,
+        adherenceRate: adherence.adherenceRate,
+        currentStreak: adherence.currentStreak,
+        longestStreak: adherence.longestStreak,
+        lastLoggedAt: adherence.lastLoggedAt,
+      },
+      weeklySummary: program.lastSummaryJson,
+      chartData: {
+        days: chartData,
+        avgPainChange: weeklyData.avgPainChange,
+        avgStiffnessChange: weeklyData.avgStiffnessChange,
+      },
+    });
+  }
+
+  /**
+   * Get weekly chart data (last 7 calendar days with logs or null)
+   */
+  private async getWeeklyChartData(programId: number): Promise<
+    Array<{
+      date: string;
+      dayLabel: string;
+      pain: number | null;
+      stiffness: number | null;
+    }>
+  > {
+    // Generate last 7 calendar days
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = DateTime.now().minus({ days: i });
+      days.push({
+        date: date.toISODate() || "",
+        dayLabel: date.toFormat("ccc"), // Mon, Tue, Wed...
+        pain: null as number | null,
+        stiffness: null as number | null,
+      });
+    }
+
+    // Get logs from last 7 days
+    const sevenDaysAgo = DateTime.now().minus({ days: 7 });
+    const logs = await RehabLog.query()
+      .where("program_id", programId)
+      .where("date", ">=", sevenDaysAgo.toSQLDate())
+      .orderBy("date", "asc");
+
+    // Map logs to days
+    for (const log of logs) {
+      const logDateStr = log.date.toISODate();
+      const dayIndex = days.findIndex((d) => d.date === logDateStr);
+      if (dayIndex !== -1) {
+        days[dayIndex].pain = log.pain;
+        days[dayIndex].stiffness = log.stiffness;
+      }
+    }
+
+    return days;
+  }
+
+  /**
+   * Generate weekly summary (same as LogsController)
+   */
+  private async generateWeeklySummary(program: RehabProgram): Promise<void> {
+    try {
+      const adherenceService = new AdherenceService();
+      const summaryFormatter = new WeeklySummaryFormatter();
+
+      // Get adherence metrics
+      const adherence = await adherenceService.calculateAdherence(program.id);
+
+      // Get weekly data
+      const weeklyData = await adherenceService.getLastWeekSummary(program.id);
+
+      // Generate AI summary
+      const summary = await summaryFormatter.generateSummary({
+        adherenceRate: adherence.adherenceRate,
+        currentStreak: adherence.currentStreak,
+        avgPainChange: weeklyData.avgPainChange,
+        avgStiffnessChange: weeklyData.avgStiffnessChange,
+        logsThisWeek: weeklyData.logsThisWeek,
+        trend: weeklyData.trend,
+      });
+
+      // Store summary in program
+      program.lastSummaryJson = summary;
+      program.lastSummaryGeneratedAt = DateTime.now();
+      await program.save();
+
+      logger.info(
+        {
+          programId: program.id,
+          adherenceRate: adherence.adherenceRate,
+          streak: adherence.currentStreak,
+        },
+        "Weekly summary generated and stored",
+      );
+    } catch (error) {
+      logger.error(
+        { programId: program.id, error: error.message },
+        "Failed to generate weekly summary",
+      );
+      // Don't throw - weekly summary generation is optional
+    }
   }
 }

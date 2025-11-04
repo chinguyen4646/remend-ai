@@ -50,6 +50,22 @@ export default class RehabProgram extends BaseModel {
   @column()
   declare metadata: Record<string, any> | null;
 
+  // Adherence tracking fields
+  @column()
+  declare currentStreak: number;
+
+  @column()
+  declare longestStreak: number;
+
+  @column.dateTime()
+  declare lastLoggedAt: DateTime | null;
+
+  @column.dateTime()
+  declare lastSummaryGeneratedAt: DateTime | null;
+
+  @column()
+  declare lastSummaryJson: Record<string, any> | null;
+
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime;
 

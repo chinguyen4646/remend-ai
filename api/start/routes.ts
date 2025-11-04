@@ -65,6 +65,7 @@ router
   .group(() => {
     router.post("/", [ProgramsController, "create"]);
     router.get("/", [ProgramsController, "index"]);
+    router.get("/:id/summary", [ProgramsController, "getSummary"]);
     router.get("/:id", [ProgramsController, "show"]);
     router.patch("/:id/status", [ProgramsController, "updateStatus"]);
   })

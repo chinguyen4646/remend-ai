@@ -10,6 +10,8 @@ import ShortlistService from "#services/exercises/shortlist_service";
 import openaiProvider from "#services/ai/openai_provider";
 import ProgressionService from "#services/exercises/progression_service";
 import PlanFeedbackFormatter from "#services/ai/plan_feedback_formatter";
+import AdherenceService from "#services/rehab/adherence_service";
+import WeeklySummaryFormatter from "#services/ai/weekly_summary_formatter";
 
 export default class LogsController {
   async create({ auth, request, response }: HttpContext) {
@@ -48,34 +50,77 @@ export default class LogsController {
     }
 
     try {
-      const log = await RehabLog.create({
-        userId: user.id,
-        programId: data.programId,
-        date: DateTime.fromISO(logDate),
-        pain: data.pain,
-        stiffness: data.stiffness,
-        swelling: data.swelling || null,
-        activityLevel: data.activityLevel || null,
-        notes: data.notes,
-        aggravators: data.aggravators || [],
-      });
+      // Check for existing log on same date (upsert logic)
+      const dateTime = DateTime.fromISO(logDate);
+      let log = await RehabLog.query()
+        .where("user_id", user.id)
+        .where("program_id", data.programId)
+        .where("date", dateTime.toSQLDate() || "")
+        .first();
 
-      logger.info(
-        { userId: user.id, programId: data.programId, date: logDate },
-        "Rehab log created",
-      );
+      let isNew = false;
 
-      // Generate exercise plan
-      const plan = await this.generatePlan(log, program);
+      if (log) {
+        // Update existing log
+        log.pain = data.pain;
+        log.stiffness = data.stiffness;
+        log.swelling = data.swelling || null;
+        log.activityLevel = data.activityLevel || null;
+        log.notes = data.notes;
+        log.aggravators = data.aggravators || [];
+        await log.save();
+
+        logger.info(
+          { userId: user.id, programId: data.programId, date: logDate, logId: log.id },
+          "Rehab log updated",
+        );
+      } else {
+        // Create new log
+        log = await RehabLog.create({
+          userId: user.id,
+          programId: data.programId,
+          date: dateTime,
+          pain: data.pain,
+          stiffness: data.stiffness,
+          swelling: data.swelling || null,
+          activityLevel: data.activityLevel || null,
+          notes: data.notes,
+          aggravators: data.aggravators || [],
+        });
+        isNew = true;
+
+        logger.info(
+          { userId: user.id, programId: data.programId, date: logDate, logId: log.id },
+          "Rehab log created",
+        );
+      }
+
+      // Update streak (after create/update)
+      const adherenceService = new AdherenceService();
+      await adherenceService.calculateStreak(program.id, dateTime);
+
+      // Generate weekly summary if needed (7+ days since last)
+      if (adherenceService.shouldGenerateWeeklySummary(program)) {
+        await this.generateWeeklySummary(program);
+        await program.refresh(); // Reload updated fields
+      }
+
+      // Generate exercise plan (only for new logs)
+      let plan = null;
+      if (isNew) {
+        plan = await this.generatePlan(log, program);
+      } else {
+        // For updates, fetch existing plan if available
+        await log.load("plan");
+        plan = log.plan || null;
+      }
 
       return response.created({ log, plan });
     } catch (error) {
-      // Handle unique constraint violation
-      if (error.code === "23505") {
-        return response.conflict({
-          errors: [{ message: "A log already exists for this program and date" }],
-        });
-      }
+      logger.error(
+        { userId: user.id, programId: data.programId, error: error.message },
+        "Failed to create/update rehab log",
+      );
       throw error;
     }
   }
@@ -253,6 +298,52 @@ export default class LogsController {
     );
 
     return plan;
+  }
+
+  /**
+   * Generate weekly summary using AdherenceService and WeeklySummaryFormatter
+   */
+  private async generateWeeklySummary(program: RehabProgram): Promise<void> {
+    try {
+      const adherenceService = new AdherenceService();
+      const summaryFormatter = new WeeklySummaryFormatter();
+
+      // Get adherence metrics
+      const adherence = await adherenceService.calculateAdherence(program.id);
+
+      // Get weekly data
+      const weeklyData = await adherenceService.getLastWeekSummary(program.id);
+
+      // Generate AI summary
+      const summary = await summaryFormatter.generateSummary({
+        adherenceRate: adherence.adherenceRate,
+        currentStreak: adherence.currentStreak,
+        avgPainChange: weeklyData.avgPainChange,
+        avgStiffnessChange: weeklyData.avgStiffnessChange,
+        logsThisWeek: weeklyData.logsThisWeek,
+        trend: weeklyData.trend,
+      });
+
+      // Store summary in program
+      program.lastSummaryJson = summary;
+      program.lastSummaryGeneratedAt = DateTime.now();
+      await program.save();
+
+      logger.info(
+        {
+          programId: program.id,
+          adherenceRate: adherence.adherenceRate,
+          streak: adherence.currentStreak,
+        },
+        "Weekly summary generated and stored",
+      );
+    } catch (error) {
+      logger.error(
+        { programId: program.id, error: error.message },
+        "Failed to generate weekly summary",
+      );
+      // Don't throw - weekly summary generation is optional
+    }
   }
 
   async index({ auth, request, response }: HttpContext) {
