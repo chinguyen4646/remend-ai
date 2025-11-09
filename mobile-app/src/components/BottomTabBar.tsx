@@ -43,6 +43,10 @@ export default function BottomTabBar() {
     router.replace("/(auth)/login");
   };
 
+  const handleNavigateToDevMenu = () => {
+    router.push("/dev");
+  };
+
   return (
     <View
       style={{
@@ -78,6 +82,14 @@ export default function BottomTabBar() {
           mode="contained"
           containerColor="#e0e7ff"
           iconColor="#6366f1"
+        />
+        <IconButton
+          icon="wrench"
+          size={28}
+          onPress={handleNavigateToDevMenu}
+          mode="contained"
+          containerColor="#ccfbf1"
+          iconColor="#14b8a6"
         />
         <IconButton
           icon="logout"
