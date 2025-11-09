@@ -54,8 +54,10 @@ export default function BaseLayout({
   // Check if bottom tab bar should be visible (hide only on auth and onboarding)
   const showTabBar = !pathname.startsWith("/(auth)") && !pathname.startsWith("/(onboarding)");
 
-  // Add extra bottom padding when tab bar is visible (56px for tab bar height)
-  const bottomPadding = showTabBar ? 56 : 0;
+  // Calculate bottom padding: tab bar height (56px) + standard padding, or just standard padding
+  const bottomPadding = showTabBar
+    ? 56 + theme.container.verticalPadding // Tab bar + standard padding = 80px
+    : theme.container.verticalPadding; // Just standard padding = 24px
 
   const content = scrollable ? (
     <ScrollView
@@ -65,7 +67,7 @@ export default function BaseLayout({
       }
       contentContainerStyle={{
         paddingHorizontal: theme.container.horizontalPadding,
-        paddingVertical: theme.container.verticalPadding,
+        paddingTop: theme.container.verticalPadding,
         paddingBottom: bottomPadding,
       }}
       showsVerticalScrollIndicator={false}
@@ -78,7 +80,7 @@ export default function BaseLayout({
       className={centered ? "flex-1 justify-center items-center" : "flex-1 items-center"}
       style={{
         paddingHorizontal: theme.container.horizontalPadding,
-        paddingVertical: theme.container.verticalPadding,
+        paddingTop: theme.container.verticalPadding,
         paddingBottom: bottomPadding,
       }}
     >
