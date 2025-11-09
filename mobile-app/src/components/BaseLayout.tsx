@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { ScrollView, View, ViewStyle, KeyboardAvoidingView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePathname } from "expo-router";
+import { theme } from "../ui/theme";
 
 interface BaseLayoutProps {
   children: ReactNode;
@@ -17,7 +18,8 @@ interface BaseLayoutProps {
  *
  * Features:
  * - Safe area insets (respects notches, status bars, rounded corners)
- * - Consistent horizontal padding
+ * - Consistent padding from design system (20px horizontal, 24px vertical)
+ * - Content max width constraint (640px) for tablets/desktop
  * - Optional scrolling (default: true)
  * - Optional keyboard avoiding for forms (default: false)
  * - Optional vertical centering for auth screens (default: false)
@@ -59,22 +61,28 @@ export default function BaseLayout({
     <ScrollView
       className="flex-1"
       contentContainerClassName={
-        centered ? "flex-grow justify-center items-center px-8 py-6" : "items-center px-8 py-6"
+        centered ? "flex-grow justify-center items-center" : "items-center"
       }
-      contentContainerStyle={{ paddingBottom: bottomPadding }}
+      contentContainerStyle={{
+        paddingHorizontal: theme.container.horizontalPadding,
+        paddingVertical: theme.container.verticalPadding,
+        paddingBottom: bottomPadding,
+      }}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps={keyboardAvoiding ? "handled" : undefined}
     >
-      <View className="w-full max-w-md">{children}</View>
+      <View style={{ width: "100%", maxWidth: theme.container.maxWidth }}>{children}</View>
     </ScrollView>
   ) : (
     <View
-      className={
-        centered ? "flex-1 justify-center items-center px-8 py-6" : "flex-1 items-center px-8 py-6"
-      }
-      style={{ paddingBottom: bottomPadding }}
+      className={centered ? "flex-1 justify-center items-center" : "flex-1 items-center"}
+      style={{
+        paddingHorizontal: theme.container.horizontalPadding,
+        paddingVertical: theme.container.verticalPadding,
+        paddingBottom: bottomPadding,
+      }}
     >
-      <View className="w-full max-w-md">{children}</View>
+      <View style={{ width: "100%", maxWidth: theme.container.maxWidth }}>{children}</View>
     </View>
   );
 

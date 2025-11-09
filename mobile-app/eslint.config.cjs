@@ -37,6 +37,7 @@ module.exports = [
       "@typescript-eslint/no-unused-vars": "warn",
       "@typescript-eslint/no-explicit-any": "warn",
       "react-native/no-color-literals": "off",
+      "react-native/no-raw-text": "off",
     },
   },
   prettier,

@@ -216,6 +216,90 @@ export default function DesignSystemScreen() {
           <Text variant="labelSmall">Label Small</Text>
         </View>
 
+        <AppDivider label="Container / Layout" />
+
+        {/* Container / Layout Section */}
+        <Text
+          variant="headlineMedium"
+          style={{ marginBottom: theme.spacing[4], fontWeight: "700" }}
+        >
+          📐 Container & Layout
+        </Text>
+        <View style={{ marginBottom: theme.spacing[6] }}>
+          <Text
+            variant="bodyMedium"
+            style={{ marginBottom: theme.spacing[3], color: theme.colors.text.secondary }}
+          >
+            Screen padding and content constraints for consistent layouts across all screens.
+          </Text>
+
+          <View style={{ gap: theme.spacing[3] }}>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <Text variant="labelMedium" style={{ color: theme.colors.text.tertiary }}>
+                Horizontal Padding
+              </Text>
+              <Text variant="bodyLarge" style={{ fontWeight: "600" }}>
+                {theme.container.horizontalPadding}px
+              </Text>
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <Text variant="labelMedium" style={{ color: theme.colors.text.tertiary }}>
+                Vertical Padding
+              </Text>
+              <Text variant="bodyLarge" style={{ fontWeight: "600" }}>
+                {theme.container.verticalPadding}px
+              </Text>
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <Text variant="labelMedium" style={{ color: theme.colors.text.tertiary }}>
+                Max Width (tablets/desktop)
+              </Text>
+              <Text variant="bodyLarge" style={{ fontWeight: "600" }}>
+                {theme.container.maxWidth}px
+              </Text>
+            </View>
+          </View>
+
+          <View
+            style={{
+              marginTop: theme.spacing[4],
+              padding: theme.spacing[3],
+              backgroundColor: theme.colors.neutral[100],
+              borderRadius: theme.radius.md,
+            }}
+          >
+            <Text
+              variant="labelSmall"
+              style={{ color: theme.colors.text.tertiary, marginBottom: theme.spacing[1] }}
+            >
+              💡 Usage
+            </Text>
+            <Text variant="bodySmall" style={{ color: theme.colors.text.secondary }}>
+              All screens use BaseLayout which applies these padding values automatically. Content
+              is constrained to {theme.container.maxWidth}px width on large screens for optimal
+              readability.
+            </Text>
+          </View>
+        </View>
+
         <AppDivider label="Elevation" />
 
         {/* Elevation Section */}

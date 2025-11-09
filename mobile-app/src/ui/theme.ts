@@ -221,6 +221,23 @@ export const spacing = {
 } as const;
 
 // ============================================================================
+// CONTAINER / LAYOUT
+// ============================================================================
+
+/**
+ * Container and layout tokens for consistent screen padding and max widths
+ * Use these in BaseLayout and screen components
+ */
+export const container = {
+  /** Horizontal padding for screen edges (mobile-friendly) */
+  horizontalPadding: 20,
+  /** Maximum content width for large screens (tablets, desktop) */
+  maxWidth: 640,
+  /** Vertical padding for screen top/bottom */
+  verticalPadding: 24,
+} as const;
+
+// ============================================================================
 // BORDER RADIUS
 // ============================================================================
 
@@ -316,6 +333,7 @@ export const theme = {
   colors,
   typography,
   spacing,
+  container,
   radius,
   elevation,
   opacity,
