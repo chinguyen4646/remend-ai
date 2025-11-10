@@ -1,9 +1,12 @@
 import { useEffect } from "react";
 import { View } from "react-native";
-import { ActivityIndicator, Text, Button } from "react-native-paper";
+import { ActivityIndicator, Text } from "react-native-paper";
 import { useRouter, Redirect } from "expo-router";
 import { useAuthStore } from "../src/stores/authStore";
 import { useRehabProgramStore } from "../src/stores/rehabProgramStore";
+import BaseLayout from "../src/components/BaseLayout";
+import { AppButton, AppCard } from "../src/ui/components";
+import { theme } from "../src/ui/theme";
 
 /**
  * Home route that redirects to the appropriate home screen based on user mode
@@ -37,9 +40,9 @@ export default function Home() {
   // Show loading while auth is loading OR while user is authenticated but user object not loaded yet
   if (authLoading || (isAuthenticated && !user) || (user?.mode === "rehab" && programLoading)) {
     return (
-      <View className="flex-1 justify-center items-center bg-white">
-        <ActivityIndicator size="large" />
-      </View>
+      <BaseLayout gradient={["#F8FAFC", "#FFFFFF"]} centered>
+        <ActivityIndicator size="large" color={theme.colors.primary[600]} />
+      </BaseLayout>
     );
   }
 
@@ -55,17 +58,42 @@ export default function Home() {
   // For rehab mode: show no active program message
   if (user.mode === "rehab" && !programLoading && !activeProgram) {
     return (
-      <View className="flex-1 justify-center items-center bg-white p-6">
-        <Text variant="headlineMedium" className="font-bold mb-4 text-center">
-          No Active Program
-        </Text>
-        <Text variant="bodyLarge" className="text-gray-600 mb-6 text-center">
-          Create a rehab program to start tracking your recovery
-        </Text>
-        <Button mode="contained" onPress={() => router.push("/(onboarding)/welcome")} icon="plus">
-          <Text>Create Program</Text>
-        </Button>
-      </View>
+      <BaseLayout gradient={["#F8FAFC", "#FFFFFF"]} centered>
+        <AppCard
+          shadow
+          padding="lg"
+          style={{ alignItems: "center", paddingVertical: theme.spacing[8] }}
+        >
+          <Text
+            variant="headlineMedium"
+            style={{
+              fontWeight: "700",
+              color: theme.colors.text.primary,
+              marginBottom: theme.spacing[4],
+              textAlign: "center",
+            }}
+          >
+            No Active Program
+          </Text>
+          <Text
+            variant="bodyLarge"
+            style={{
+              color: theme.colors.neutral[500],
+              marginBottom: theme.spacing[6],
+              textAlign: "center",
+            }}
+          >
+            Create a rehab program to start tracking your recovery
+          </Text>
+          <AppButton
+            variant="primary"
+            size="large"
+            onPress={() => router.push("/(onboarding)/welcome")}
+          >
+            Create Program
+          </AppButton>
+        </AppCard>
+      </BaseLayout>
     );
   }
 
@@ -77,9 +105,9 @@ export default function Home() {
   // For rehab users - show loading while useEffect redirects to profile
   if (user.mode === "rehab") {
     return (
-      <View className="flex-1 justify-center items-center bg-white">
-        <ActivityIndicator size="large" />
-      </View>
+      <BaseLayout gradient={["#F8FAFC", "#FFFFFF"]} centered>
+        <ActivityIndicator size="large" color={theme.colors.primary[600]} />
+      </BaseLayout>
     );
   }
 

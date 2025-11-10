@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { View, ScrollView } from "react-native";
-import { Text, Button, Card, ActivityIndicator } from "react-native-paper";
+import { Text, ActivityIndicator } from "react-native-paper";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { api } from "../../src/api/client";
 import type { RehabPlan } from "../../src/types/rehabPlan";
 import BaseLayout from "../../src/components/BaseLayout";
+import { AppButton, AppCard } from "../../src/ui/components";
+import { theme } from "../../src/ui/theme";
 
 export default function PlanCreatedScreen() {
   const router = useRouter();
@@ -53,9 +55,12 @@ export default function PlanCreatedScreen() {
 
   if (isLoading) {
     return (
-      <BaseLayout centered>
-        <ActivityIndicator size="large" />
-        <Text variant="bodyLarge" className="mt-4">
+      <BaseLayout gradient={["#F8FAFC", "#FFFFFF"]} centered>
+        <ActivityIndicator size="large" color={theme.colors.primary[600]} />
+        <Text
+          variant="bodyLarge"
+          style={{ marginTop: theme.spacing[4], color: theme.colors.text.primary }}
+        >
           Generating your plan...
         </Text>
       </BaseLayout>
@@ -64,13 +69,16 @@ export default function PlanCreatedScreen() {
 
   if (error || !plan) {
     return (
-      <BaseLayout centered>
-        <Text variant="bodyLarge" className="text-red-600 mb-4">
+      <BaseLayout gradient={["#F8FAFC", "#FFFFFF"]} centered>
+        <Text
+          variant="bodyLarge"
+          style={{ color: theme.colors.error[600], marginBottom: theme.spacing[4] }}
+        >
           {error || "Plan not found"}
         </Text>
-        <Button mode="contained" onPress={handleGoHome}>
-          <Text>Go Home</Text>
-        </Button>
+        <AppButton variant="primary" size="large" onPress={handleGoHome}>
+          Go Home
+        </AppButton>
       </BaseLayout>
     );
   }
@@ -79,14 +87,21 @@ export default function PlanCreatedScreen() {
   const hasFallback = plan.planType === "fallback" || plan.aiStatus === "failed";
 
   return (
-    <BaseLayout scrollable>
+    <BaseLayout gradient={["#F8FAFC", "#FFFFFF"]} scrollable>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View className="mb-6">
-          <Text variant="headlineMedium" className="font-bold mb-2">
+        <View style={{ marginBottom: theme.spacing[6] }}>
+          <Text
+            variant="headlineLarge"
+            style={{
+              fontWeight: "700",
+              color: theme.colors.text.primary,
+              marginBottom: theme.spacing[2],
+            }}
+          >
             {isInitialPlan ? "Your Starting Plan" : "Today's Plan"}
           </Text>
-          <Text variant="bodyLarge" className="text-gray-600">
+          <Text variant="bodyMedium" style={{ color: theme.colors.neutral[500] }}>
             {isInitialPlan
               ? "Welcome! Here's your personalized starting plan"
               : "Your personalized exercise plan is ready"}
@@ -95,90 +110,152 @@ export default function PlanCreatedScreen() {
 
         {/* Plan Type Badge */}
         {hasFallback && (
-          <Card className="mb-4 bg-yellow-50">
-            <Card.Content>
-              <Text variant="bodyMedium" className="text-yellow-800">
-                ℹ️ Using fallback plan. AI personalization temporarily unavailable.
-              </Text>
-            </Card.Content>
-          </Card>
+          <AppCard
+            leftAccentColor="#F59E0B"
+            shadow
+            padding="md"
+            style={{ backgroundColor: "#FEF3C7", marginBottom: theme.spacing[4] }}
+          >
+            <Text variant="bodyMedium" style={{ color: "#92400E" }}>
+              ℹ️ Using fallback plan. AI personalization temporarily unavailable.
+            </Text>
+          </AppCard>
         )}
 
         {/* AI Summary */}
         {aiOutput?.summary && (
-          <Card className="mb-4">
-            <Card.Content>
-              <Text variant="titleMedium" className="font-bold mb-2">
-                Summary
-              </Text>
-              <Text variant="bodyMedium" className="text-gray-700">
-                {aiOutput.summary}
-              </Text>
-            </Card.Content>
-          </Card>
+          <AppCard shadow padding="md" style={{ marginBottom: theme.spacing[4] }}>
+            <Text
+              variant="titleMedium"
+              style={{
+                fontWeight: "600",
+                color: theme.colors.text.primary,
+                marginBottom: theme.spacing[2],
+              }}
+            >
+              Summary
+            </Text>
+            <Text variant="bodyMedium" style={{ color: theme.colors.text.secondary }}>
+              {aiOutput.summary}
+            </Text>
+          </AppCard>
         )}
 
         {/* Caution */}
         {aiOutput?.caution && (
-          <Card className="mb-4 bg-red-50">
-            <Card.Content>
-              <Text variant="titleMedium" className="font-bold mb-2 text-red-800">
-                ⚠️ Caution
-              </Text>
-              <Text variant="bodyMedium" className="text-red-700">
-                {aiOutput.caution}
-              </Text>
-            </Card.Content>
-          </Card>
+          <AppCard
+            leftAccentColor="#DC2626"
+            shadow
+            padding="md"
+            style={{ backgroundColor: "#FEE2E2", marginBottom: theme.spacing[4] }}
+          >
+            <Text
+              variant="titleMedium"
+              style={{
+                fontWeight: "600",
+                color: "#991B1B",
+                marginBottom: theme.spacing[2],
+              }}
+            >
+              ⚠️ Caution
+            </Text>
+            <Text variant="bodyMedium" style={{ color: "#991B1B" }}>
+              {aiOutput.caution}
+            </Text>
+          </AppCard>
         )}
 
         {/* Exercise List */}
-        <View className="mb-6">
-          <Text variant="titleLarge" className="font-bold mb-3">
+        <View style={{ marginBottom: theme.spacing[6] }}>
+          <Text
+            variant="titleLarge"
+            style={{
+              fontWeight: "600",
+              color: theme.colors.text.primary,
+              marginBottom: theme.spacing[3],
+            }}
+          >
             Exercises
           </Text>
           {aiOutput?.bullets
             ? // AI-formatted bullets
               aiOutput.bullets.map((bullet, idx) => (
-                <Card key={idx} className="mb-3">
-                  <Card.Content>
-                    <Text variant="titleMedium" className="font-bold mb-1">
-                      {idx + 1}. {bullet.exercise_name}
-                    </Text>
-                    <Text variant="bodyMedium" className="text-indigo-600 mb-2">
-                      {bullet.dosage_text}
-                    </Text>
-                    <Text variant="bodyMedium" className="text-gray-700">
-                      {bullet.coaching}
-                    </Text>
-                  </Card.Content>
-                </Card>
+                <AppCard
+                  key={idx}
+                  leftAccentColor={theme.colors.primary[500]}
+                  shadow
+                  padding="md"
+                  style={{ marginBottom: theme.spacing[3] }}
+                >
+                  <Text
+                    variant="titleMedium"
+                    style={{
+                      fontWeight: "600",
+                      color: theme.colors.text.primary,
+                      marginBottom: theme.spacing[1],
+                    }}
+                  >
+                    {idx + 1}. {bullet.exercise_name}
+                  </Text>
+                  <Text
+                    variant="bodyMedium"
+                    style={{
+                      color: theme.colors.primary[600],
+                      marginBottom: theme.spacing[2],
+                    }}
+                  >
+                    {bullet.dosage_text}
+                  </Text>
+                  <Text variant="bodyMedium" style={{ color: theme.colors.text.secondary }}>
+                    {bullet.coaching}
+                  </Text>
+                </AppCard>
               ))
             : // Fallback: show shortlist without AI coaching
               plan.shortlistJson.exercises.map((exercise, idx) => (
-                <Card key={idx} className="mb-3">
-                  <Card.Content>
-                    <Text variant="titleMedium" className="font-bold mb-1">
-                      {idx + 1}. {exercise.name}
+                <AppCard
+                  key={idx}
+                  leftAccentColor={theme.colors.primary[500]}
+                  shadow
+                  padding="md"
+                  style={{ marginBottom: theme.spacing[3] }}
+                >
+                  <Text
+                    variant="titleMedium"
+                    style={{
+                      fontWeight: "600",
+                      color: theme.colors.text.primary,
+                      marginBottom: theme.spacing[1],
+                    }}
+                  >
+                    {idx + 1}. {exercise.name}
+                  </Text>
+                  <Text
+                    variant="bodyMedium"
+                    style={{
+                      color: theme.colors.primary[600],
+                      marginBottom: theme.spacing[2],
+                    }}
+                  >
+                    {exercise.dosage_text}
+                  </Text>
+                  {exercise.safety_notes && (
+                    <Text
+                      variant="bodySmall"
+                      style={{ color: theme.colors.neutral[500], fontStyle: "italic" }}
+                    >
+                      {exercise.safety_notes}
                     </Text>
-                    <Text variant="bodyMedium" className="text-indigo-600 mb-2">
-                      {exercise.dosage_text}
-                    </Text>
-                    {exercise.safety_notes && (
-                      <Text variant="bodySmall" className="text-gray-600 italic">
-                        {exercise.safety_notes}
-                      </Text>
-                    )}
-                  </Card.Content>
-                </Card>
+                  )}
+                </AppCard>
               ))}
         </View>
 
         {/* Action Button */}
-        <View className="mb-4">
-          <Button mode="contained" onPress={handleGoHome}>
-            <Text>{isInitialPlan ? "Get Started!" : "Back to Home"}</Text>
-          </Button>
+        <View style={{ marginBottom: theme.spacing[4] }}>
+          <AppButton variant="primary" size="large" onPress={handleGoHome}>
+            {isInitialPlan ? "Get Started!" : "Back to Home"}
+          </AppButton>
         </View>
       </ScrollView>
     </BaseLayout>

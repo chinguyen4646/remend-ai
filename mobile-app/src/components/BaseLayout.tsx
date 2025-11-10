@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { ScrollView, View, ViewStyle, KeyboardAvoidingView, Platform } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePathname } from "expo-router";
 import { theme } from "../ui/theme";
@@ -11,6 +12,8 @@ interface BaseLayoutProps {
   centered?: boolean;
   style?: ViewStyle;
   className?: string;
+  /** Optional gradient background [start, end] colors. Default: none (solid bg-gray-50) */
+  gradient?: [string, string];
 }
 
 /**
@@ -47,6 +50,7 @@ export default function BaseLayout({
   centered = false,
   style,
   className,
+  gradient,
 }: BaseLayoutProps) {
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
@@ -99,13 +103,37 @@ export default function BaseLayout({
     content
   );
 
+  // Wrapper with safe area insets and gradient support
+  if (gradient) {
+    return (
+      <LinearGradient
+        colors={gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={[
+          {
+            flex: 1,
+            paddingTop: insets.top,
+            paddingBottom: showTabBar ? 0 : insets.bottom,
+            paddingLeft: insets.left,
+            paddingRight: insets.right,
+          },
+          style,
+        ]}
+      >
+        {wrappedContent}
+      </LinearGradient>
+    );
+  }
+
+  // Fallback to solid background
   return (
     <View
       className={`flex-1 bg-gray-50 ${className || ""}`}
       style={[
         {
           paddingTop: insets.top,
-          paddingBottom: showTabBar ? 0 : insets.bottom, // Don't add bottom padding when tab bar is visible
+          paddingBottom: showTabBar ? 0 : insets.bottom,
           paddingLeft: insets.left,
           paddingRight: insets.right,
         },

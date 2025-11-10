@@ -1,12 +1,14 @@
 import { useState, useRef } from "react";
 import { View, ScrollView, TouchableOpacity } from "react-native";
-import { Text, Button, TextInput, Snackbar } from "react-native-paper";
+import { Text, TextInput, Snackbar } from "react-native-paper";
 import Slider from "@react-native-community/slider";
 import { useRouter } from "expo-router";
 import { useRehabProgramStore } from "../../src/stores/rehabProgramStore";
 import { useRehabLogStore } from "../../src/stores/rehabLogStore";
 import BaseLayout from "../../src/components/BaseLayout";
 import { useVoiceProvider } from "../../src/hooks/useVoiceProvider";
+import { AppButton } from "../../src/ui/components";
+import { theme } from "../../src/ui/theme";
 
 export default function LogFormScreen() {
   const router = useRouter();
@@ -150,13 +152,20 @@ export default function LogFormScreen() {
     `Log today for your ${formatSide(activeProgram.side)} ${activeProgram.area.replace("_", " ")}`.trim();
 
   return (
-    <BaseLayout scrollable keyboardAvoiding>
+    <BaseLayout gradient={["#F8FAFC", "#FFFFFF"]} scrollable keyboardAvoiding>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View className="mb-6">
-          <Text variant="headlineMedium" className="font-bold mb-2">
+        <View style={{ marginBottom: theme.spacing[6] }}>
+          <Text
+            variant="headlineLarge"
+            style={{
+              fontWeight: "700",
+              color: theme.colors.text.primary,
+              marginBottom: theme.spacing[2],
+            }}
+          >
             {title}
           </Text>
-          <Text variant="bodyLarge" className="text-gray-600">
+          <Text variant="bodyMedium" style={{ color: theme.colors.neutral[500] }}>
             How are you feeling today?
           </Text>
         </View>
@@ -249,43 +258,40 @@ export default function LogFormScreen() {
         </View>
 
         {/* Activity Level */}
-        <View className="mb-6">
-          <Text variant="titleMedium" className="mb-3">
+        <View style={{ marginBottom: theme.spacing[6] }}>
+          <Text
+            variant="titleMedium"
+            style={{
+              color: theme.colors.text.primary,
+              marginBottom: theme.spacing[3],
+            }}
+          >
             Activity Level (Optional)
           </Text>
-          <View className="flex-row gap-2 flex-wrap">
-            <Button
-              mode={activityLevel === "rest" ? "contained" : "outlined"}
-              onPress={() => setActivityLevel("rest")}
-              disabled={isLoading}
-              compact
-            >
-              <Text>Rest</Text>
-            </Button>
-            <Button
-              mode={activityLevel === "light" ? "contained" : "outlined"}
-              onPress={() => setActivityLevel("light")}
-              disabled={isLoading}
-              compact
-            >
-              <Text>Light</Text>
-            </Button>
-            <Button
-              mode={activityLevel === "moderate" ? "contained" : "outlined"}
-              onPress={() => setActivityLevel("moderate")}
-              disabled={isLoading}
-              compact
-            >
-              <Text>Moderate</Text>
-            </Button>
-            <Button
-              mode={activityLevel === "heavy" ? "contained" : "outlined"}
-              onPress={() => setActivityLevel("heavy")}
-              disabled={isLoading}
-              compact
-            >
-              <Text>Heavy</Text>
-            </Button>
+          <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+            {[
+              { value: "rest", label: "Rest" },
+              { value: "light", label: "Light" },
+              { value: "moderate", label: "Moderate" },
+              { value: "heavy", label: "Heavy" },
+            ].map((item, index) => (
+              <View
+                key={item.value}
+                style={{
+                  marginRight: index < 3 ? theme.spacing[2] : 0,
+                  marginBottom: theme.spacing[2],
+                }}
+              >
+                <AppButton
+                  variant={activityLevel === item.value ? "primary" : "secondary"}
+                  size="small"
+                  onPress={() => setActivityLevel(item.value as any)}
+                  disabled={isLoading}
+                >
+                  {item.label}
+                </AppButton>
+              </View>
+            ))}
           </View>
         </View>
 
@@ -383,44 +389,65 @@ export default function LogFormScreen() {
         </View>
 
         {/* Aggravators */}
-        <View className="mb-6">
-          <Text variant="titleMedium" className="mb-2">
+        <View style={{ marginBottom: theme.spacing[6] }}>
+          <Text
+            variant="titleMedium"
+            style={{
+              color: theme.colors.text.primary,
+              marginBottom: theme.spacing[2],
+            }}
+          >
             What makes it worse? (Optional)
           </Text>
-          <Text variant="bodySmall" className="text-gray-600 mb-3">
+          <Text
+            variant="bodySmall"
+            style={{
+              color: theme.colors.neutral[500],
+              marginBottom: theme.spacing[3],
+            }}
+          >
             Tap activities that aggravate your symptoms
           </Text>
-          <View className="flex-row gap-2 flex-wrap">
+          <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
             {["Stairs", "Squatting", "Running", "Jumping", "Kneeling", "Standing", "Walking"].map(
-              (item) => (
-                <Button
+              (item, index) => (
+                <View
                   key={item}
-                  mode={aggravators.includes(item.toLowerCase()) ? "contained" : "outlined"}
-                  onPress={() => toggleAggravator(item.toLowerCase())}
-                  disabled={isLoading}
-                  compact
+                  style={{
+                    marginRight: theme.spacing[2],
+                    marginBottom: theme.spacing[2],
+                  }}
                 >
-                  <Text>{item}</Text>
-                </Button>
+                  <AppButton
+                    variant={aggravators.includes(item.toLowerCase()) ? "primary" : "secondary"}
+                    size="small"
+                    onPress={() => toggleAggravator(item.toLowerCase())}
+                    disabled={isLoading}
+                  >
+                    {item}
+                  </AppButton>
+                </View>
               ),
             )}
           </View>
         </View>
 
         {/* Action Buttons */}
-        <View className="gap-3 mb-4">
-          <Button
-            mode="contained"
+        <View style={{ marginBottom: theme.spacing[4] }}>
+          <AppButton
+            variant="primary"
+            size="large"
             onPress={handleSave}
             loading={isLoading}
             disabled={isLoading || !isNotesValid}
+            style={{ marginBottom: theme.spacing[3] }}
           >
             {isLoading ? "Saving..." : "Save Today's Log"}
-          </Button>
+          </AppButton>
 
-          <Button mode="outlined" onPress={handleCancel} disabled={isLoading}>
-            <Text>Cancel</Text>
-          </Button>
+          <AppButton variant="secondary" size="large" onPress={handleCancel} disabled={isLoading}>
+            Cancel
+          </AppButton>
         </View>
       </ScrollView>
 

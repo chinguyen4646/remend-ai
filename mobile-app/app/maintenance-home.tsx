@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { View, RefreshControl, ScrollView } from "react-native";
-import { Text, Button, Card, ActivityIndicator } from "react-native-paper";
+import { Text, ActivityIndicator } from "react-native-paper";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useCallback } from "react";
+import { Feather } from "@expo/vector-icons";
 import { useWellnessLogStore } from "../src/stores/wellnessLogStore";
 import BaseLayout from "../src/components/BaseLayout";
 import { formatCalendarDate } from "../src/utils/dates";
+import { AppButton, AppCard } from "../src/ui/components";
+import { theme } from "../src/ui/theme";
 
 export default function MaintenanceHomeScreen() {
   const { logs, hasLoggedToday, loadLogs, isLoading } = useWellnessLogStore();
@@ -35,114 +38,199 @@ export default function MaintenanceHomeScreen() {
 
   if (isLoading && logs.length === 0) {
     return (
-      <View className="flex-1 justify-center items-center bg-white">
-        <ActivityIndicator size="large" />
-      </View>
+      <BaseLayout gradient={["#F8FAFC", "#FFFFFF"]} centered>
+        <ActivityIndicator size="large" color={theme.colors.primary[600]} />
+      </BaseLayout>
     );
   }
 
   return (
-    <BaseLayout scrollable={false}>
+    <BaseLayout gradient={["#F8FAFC", "#FFFFFF"]} scrollable={false}>
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <View className="mb-6 flex-row justify-between items-start">
-          <View className="flex-1">
-            <Text variant="headlineMedium" className="font-bold mb-2">
-              Maintenance Mode 💪
+        {/* Header */}
+        <View style={{ marginBottom: theme.spacing[6] }}>
+          <View
+            style={{ flexDirection: "row", alignItems: "center", marginBottom: theme.spacing[2] }}
+          >
+            <Feather
+              name="activity"
+              size={28}
+              color={theme.colors.primary[600]}
+              style={{ marginRight: theme.spacing[2] }}
+            />
+            <Text
+              variant="headlineLarge"
+              style={{
+                fontWeight: "700",
+                color: theme.colors.text.primary,
+              }}
+            >
+              Maintenance Mode
             </Text>
           </View>
+          <Text variant="bodyMedium" style={{ color: theme.colors.neutral[500] }}>
+            Stay on top of your health and maintain your wellness journey
+          </Text>
         </View>
 
         {/* Check-in CTA */}
         {!hasLoggedToday && (
-          <Card className="mb-4" mode="elevated">
-            <Card.Content>
-              <Text variant="titleLarge" className="font-bold mb-2">
-                Daily Check-In
-              </Text>
-              <Text variant="bodyMedium" className="text-gray-600 mb-4">
-                How are you feeling today? Track your wellness to stay on top of your health.
-              </Text>
-              <Button mode="contained" onPress={handleCheckIn} icon="plus">
-                <Text>Check In</Text>
-              </Button>
-            </Card.Content>
-          </Card>
+          <AppCard shadow padding="md" style={{ marginBottom: theme.spacing[4] }}>
+            <Text
+              variant="titleLarge"
+              style={{
+                fontWeight: "600",
+                color: theme.colors.text.primary,
+                marginBottom: theme.spacing[2],
+              }}
+            >
+              Daily Check-In
+            </Text>
+            <Text
+              variant="bodyMedium"
+              style={{
+                color: theme.colors.neutral[500],
+                marginBottom: theme.spacing[4],
+              }}
+            >
+              How are you feeling today? Track your wellness to stay on top of your health.
+            </Text>
+            <AppButton variant="primary" size="large" onPress={handleCheckIn}>
+              Check In
+            </AppButton>
+          </AppCard>
         )}
 
         {/* Already checked in today */}
         {hasLoggedToday && (
-          <Card className="mb-4" mode="outlined">
-            <Card.Content>
-              <Text variant="titleMedium" className="font-bold mb-2 text-green-600">
-                ✓ Checked in today
+          <AppCard
+            leftAccentColor="#10B981"
+            shadow
+            padding="md"
+            style={{ backgroundColor: "#DCFCE7", marginBottom: theme.spacing[4] }}
+          >
+            <View
+              style={{ flexDirection: "row", alignItems: "center", marginBottom: theme.spacing[1] }}
+            >
+              <Feather
+                name="check-circle"
+                size={20}
+                color="#15803D"
+                style={{ marginRight: theme.spacing[2] }}
+              />
+              <Text variant="titleMedium" style={{ fontWeight: "600", color: "#15803D" }}>
+                Checked in today
               </Text>
-              <Text variant="bodyMedium" className="text-gray-600">
-                Great job! Come back tomorrow to check in again.
-              </Text>
-            </Card.Content>
-          </Card>
+            </View>
+            <Text variant="bodyMedium" style={{ color: "#15803D" }}>
+              Great job! Come back tomorrow to check in again.
+            </Text>
+          </AppCard>
         )}
 
         {/* Last 7 Days */}
         {logs.length > 0 && (
-          <Card className="mb-4">
-            <Card.Content>
-              <Text variant="titleLarge" className="font-bold mb-4">
-                Last 7 Days
-              </Text>
+          <AppCard shadow padding="md" style={{ marginBottom: theme.spacing[4] }}>
+            <Text
+              variant="titleLarge"
+              style={{
+                fontWeight: "600",
+                color: theme.colors.text.primary,
+                marginBottom: theme.spacing[4],
+              }}
+            >
+              Last 7 Days
+            </Text>
 
-              {/* Logs List */}
-              <View className="gap-3">
-                {logs.map((log) => (
-                  <View key={log.id} className="border-l-4 border-indigo-500 pl-3 py-2">
-                    <Text variant="labelLarge" className="font-bold mb-1">
-                      {formatCalendarDate(log.date)}
-                    </Text>
-                    <View className="flex-row gap-4 flex-wrap">
-                      {log.pain !== null && <Text variant="bodyMedium">Pain: {log.pain}</Text>}
-                      {log.stiffness !== null && (
-                        <Text variant="bodyMedium">Stiffness: {log.stiffness}</Text>
-                      )}
-                      {log.tension !== null && (
-                        <Text variant="bodyMedium">Tension: {log.tension}</Text>
-                      )}
-                      {log.energy !== null && (
-                        <Text variant="bodyMedium">Energy: {log.energy}</Text>
-                      )}
-                    </View>
-                    {log.areaTag && (
-                      <Text variant="bodySmall" className="text-gray-600 mt-1">
-                        Area: {log.areaTag}
+            {/* Logs List */}
+            <View>
+              {logs.map((log, index) => (
+                <View
+                  key={log.id}
+                  style={{
+                    borderLeftWidth: 4,
+                    borderLeftColor: theme.colors.primary[500],
+                    paddingLeft: theme.spacing[3],
+                    paddingVertical: theme.spacing[2],
+                    marginBottom: index < logs.length - 1 ? theme.spacing[3] : 0,
+                  }}
+                >
+                  <Text
+                    variant="labelLarge"
+                    style={{
+                      fontWeight: "700",
+                      color: theme.colors.text.primary,
+                      marginBottom: theme.spacing[1],
+                    }}
+                  >
+                    {formatCalendarDate(log.date)}
+                  </Text>
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: theme.spacing[4] }}>
+                    {log.pain !== null && (
+                      <Text variant="bodyMedium" style={{ color: theme.colors.text.primary }}>
+                        Pain: {log.pain}
                       </Text>
                     )}
-                    {log.notes && (
-                      <Text variant="bodySmall" className="text-gray-600 mt-1" numberOfLines={2}>
-                        {log.notes}
+                    {log.stiffness !== null && (
+                      <Text variant="bodyMedium" style={{ color: theme.colors.text.primary }}>
+                        Stiffness: {log.stiffness}
+                      </Text>
+                    )}
+                    {log.tension !== null && (
+                      <Text variant="bodyMedium" style={{ color: theme.colors.text.primary }}>
+                        Tension: {log.tension}
+                      </Text>
+                    )}
+                    {log.energy !== null && (
+                      <Text variant="bodyMedium" style={{ color: theme.colors.text.primary }}>
+                        Energy: {log.energy}
                       </Text>
                     )}
                   </View>
-                ))}
-              </View>
-            </Card.Content>
-          </Card>
+                  {log.areaTag && (
+                    <Text
+                      variant="bodySmall"
+                      style={{ color: theme.colors.neutral[500], marginTop: 4 }}
+                    >
+                      Area: {log.areaTag}
+                    </Text>
+                  )}
+                  {log.notes && (
+                    <Text
+                      variant="bodySmall"
+                      style={{ color: theme.colors.neutral[500], marginTop: 4 }}
+                      numberOfLines={2}
+                    >
+                      {log.notes}
+                    </Text>
+                  )}
+                </View>
+              ))}
+            </View>
+          </AppCard>
         )}
 
         {/* Empty state */}
         {logs.length === 0 && !isLoading && (
-          <Card className="mb-4">
-            <Card.Content>
-              <Text variant="titleMedium" className="font-bold mb-2">
-                Start Tracking
-              </Text>
-              <Text variant="bodyMedium" className="text-gray-600">
-                Your check-in history will appear here after your first entry.
-              </Text>
-            </Card.Content>
-          </Card>
+          <AppCard shadow padding="md" style={{ marginBottom: theme.spacing[4] }}>
+            <Text
+              variant="titleMedium"
+              style={{
+                fontWeight: "600",
+                color: theme.colors.text.primary,
+                marginBottom: theme.spacing[2],
+              }}
+            >
+              Start Tracking
+            </Text>
+            <Text variant="bodyMedium" style={{ color: theme.colors.neutral[500] }}>
+              Your check-in history will appear here after your first entry.
+            </Text>
+          </AppCard>
         )}
       </ScrollView>
     </BaseLayout>
